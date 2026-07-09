@@ -65,13 +65,27 @@ placeholder — no component/hook/adapter code yet (that starts in Epic 1).
   spurious CLAUDE.md reformat was reverted with `git checkout -- CLAUDE.md` before any commit.
 - **`.gitignore` already covered `.env.local`, `_bmad/`, `.claude/`** from repo setup — no edit
   was needed for AC6.
+- **Codex review findings.** An independent Codex review of the branch diff found: (High) the
+  boundary-rule glob patterns missed extension-qualified and bare-directory import spellings —
+  fixed, see above. (Medium) `src/features/**` has no lint rule preventing it from importing
+  `demo/App` — consciously **not** added: AC4 scopes the rule to `src/lib/**` only ("A
+  `no-restricted-imports` ESLint rule **scoped to `src/lib/**`**"), and `src/features/**` is
+  documented (not yet lint-enforced) to import only from `lib/`, per architecture §3.2/AR-2; adding
+  a second boundary edge is out of this story's acceptance criteria. (Low) `tsconfig.app.json` was
+  missing `DOM.Iterable` and `noUncheckedSideEffectImports` versus the current stock Vite template
+  — both added.
 
 ## How it works — the lib-boundary rule (AR-2)
 
 `eslint.config.js` adds an override scoped to `files: ['src/lib/**/*.{ts,tsx}']` with a
 `no-restricted-imports` rule forbidding import specifiers matching `**/features/*`,
-`**/features/**`, `**/App`, `**/main`, `**/demo/*`, `**/demo/**`. This mechanically enforces the
-one-way import direction `lib/` ← `features/github-search/` ← `demo`/`App` (never the reverse).
+`**/features/**`, `**/App`, `**/App.tsx`, `**/App.ts`, `**/main`, `**/main.tsx`, `**/main.ts`,
+`**/demo`, `**/demo/*`, `**/demo/**`. This mechanically enforces the one-way import direction
+`lib/` ← `features/github-search/` ← `demo`/`App` (never the reverse). Extension-qualified
+(`App.tsx`) and bare directory (`../../demo`) specifiers are covered explicitly — an independent
+Codex review probed the initial pattern set with `eslint --stdin` and found both spellings slipped
+past a version that only listed extensionless `**/App`/`**/demo/**`; the pattern list above is the
+fixed version, re-verified with the same probes.
 
 **Proof the rule fires** — a temporary file `src/lib/autocomplete/_boundary-proof.ts` was added
 with:
@@ -92,6 +106,17 @@ Running `pnpm lint` produced:
 
 The file was then deleted and `src/lib/autocomplete/.gitkeep` restored; `pnpm lint` is clean
 again on the committed tree.
+
+Additional negative probes (run via `eslint --stdin --stdin-filename src/lib/autocomplete/probe.ts`,
+no file written) after the Codex-driven pattern fix, both correctly rejected:
+
+```
+$ printf "import demo from '../../demo'\nexport { demo }\n" | eslint --stdin --stdin-filename src/lib/autocomplete/probe.ts
+<stdin>:1:1  error  '../../demo' import is restricted ... no-restricted-imports
+
+$ printf "import App from '../../App.tsx'\nexport { App }\n" | eslint --stdin --stdin-filename src/lib/autocomplete/probe.ts
+<stdin>:1:1  error  '../../App.tsx' import is restricted ... no-restricted-imports
+```
 
 ## Scripts contract
 

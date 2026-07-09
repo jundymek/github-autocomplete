@@ -1,6 +1,10 @@
+---
+baseline_commit: b6fb085ee3c1dba9faade84363c747e26806028b
+---
+
 # Story 2.2: Merge, sort, cap — the combined-results contract
 
-Status: Approved
+Status: Review
 
 ## Story
 
@@ -24,20 +28,20 @@ so that results are predictable and ordered exactly as the brief requires.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Pure merge/sort/cap (AC: 1–5)
-  - [ ] Create `src/features/github-search/mergeResults.ts` exporting a pure, dependency-free function `mergeResults(users: GithubResult[], repos: GithubResult[]): GithubResult[]` that concatenates, sorts, and caps to 50.
-  - [ ] Sort comparator: primary `a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })`; on `0`, tie-break by `kind` (`repo` < `user`), then by `String(a.id).localeCompare(String(b.id))`. Document the tie-break in a comment (AC 4).
-  - [ ] Cap: `.slice(0, 50)` **after** sorting (AC 5). Define `MAX_RESULTS = 50` as a named constant.
-  - [ ] Keep the module pure: no `fetch`, no side effects, no imports beyond the `GithubResult` type. (AR-8 "pure, unit-testable module")
-- [ ] Task 2 — Composed `fetchSuggestions` (AC: 6, 7, 8)
-  - [ ] In `mergeResults.ts` (or a small `githubSuggestions.ts` in the same folder — pick one, note it in the README), compose the Story 2.1 client + `mergeResults` into `fetchSuggestions(query, signal)` matching the AR-4 signature.
-  - [ ] Await the client's two parallel fetches via `Promise.all`; on both-success, map/merge/cap and resolve `GithubResult[]`; on either failure, let the typed `GithubSearchError` reject (do not catch-and-partial). Let `AbortError` propagate unchanged. (AC 6, 8)
-  - [ ] Ensure the token argument (if any) is plumbed through to the client so 2.3 can pass a prop-supplied token. (FR-16 continuity)
-- [ ] Task 3 — Tests (AC: 9)
-  - [ ] `src/features/github-search/mergeResults.test.ts` — pure unit tests for cases (a)–(f): build `GithubResult` fixtures directly (no network needed for the pure function). Assert exact ordering arrays, the 50-boundary slice, and empty-input handling.
-  - [ ] Test (g) partial-failure rejection through the composed `fetchSuggestions` — use MSW node server (per §3.6) so one endpoint 500s/403s and the other succeeds, and assert `fetchSuggestions` rejects with the typed `GithubSearchError` (never resolves a partial list). Reuse Story 2.1's MSW handler patterns.
-- [ ] Task 4 — Verify (AC: all)
-  - [ ] `pnpm lint && pnpm typecheck && pnpm test` all green. No new dependencies. Test-first for the pure function.
+- [x] Task 1 — Pure merge/sort/cap (AC: 1–5)
+  - [x] Create `src/features/github-search/mergeResults.ts` exporting a pure, dependency-free function `mergeResults(users: GithubResult[], repos: GithubResult[]): GithubResult[]` that concatenates, sorts, and caps to 50.
+  - [x] Sort comparator: primary `a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })`; on `0`, tie-break by `kind` (`repo` < `user`), then by `String(a.id).localeCompare(String(b.id))`. Document the tie-break in a comment (AC 4).
+  - [x] Cap: `.slice(0, 50)` **after** sorting (AC 5). Define `MAX_RESULTS = 50` as a named constant.
+  - [x] Keep the module pure: no `fetch`, no side effects, no imports beyond the `GithubResult` type. (AR-8 "pure, unit-testable module")
+- [x] Task 2 — Composed `fetchSuggestions` (AC: 6, 7, 8)
+  - [x] In `mergeResults.ts` (or a small `githubSuggestions.ts` in the same folder — pick one, note it in the README), compose the Story 2.1 client + `mergeResults` into `fetchSuggestions(query, signal)` matching the AR-4 signature.
+  - [x] Await the client's two parallel fetches via `Promise.all`; on both-success, map/merge/cap and resolve `GithubResult[]`; on either failure, let the typed `GithubSearchError` reject (do not catch-and-partial). Let `AbortError` propagate unchanged. (AC 6, 8)
+  - [x] Ensure the token argument (if any) is plumbed through to the client so 2.3 can pass a prop-supplied token. (FR-16 continuity)
+- [x] Task 3 — Tests (AC: 9)
+  - [x] `src/features/github-search/mergeResults.test.ts` — pure unit tests for cases (a)–(f): build `GithubResult` fixtures directly (no network needed for the pure function). Assert exact ordering arrays, the 50-boundary slice, and empty-input handling.
+  - [x] Test (g) partial-failure rejection through the composed `fetchSuggestions` — use MSW node server (per §3.6) so one endpoint 500s/403s and the other succeeds, and assert `fetchSuggestions` rejects with the typed `GithubSearchError` (never resolves a partial list). Reuse Story 2.1's MSW handler patterns.
+- [x] Task 4 — Verify (AC: all)
+  - [x] `pnpm lint && pnpm typecheck && pnpm test` all green. No new dependencies. Test-first for the pure function.
 
 ## Documentation deliverables
 
@@ -94,10 +98,44 @@ Part of Definition of Done (see CLAUDE.md). Create the documentation folder:
 
 ### Agent Model Used
 
+Claude Fable 5 (claude-fable-5) via Claude Code
+
+### Implementation Plan
+
+1. TDD (red first): `mergeResults.test.ts` — pure fixture-based unit tests for AC 9 (a)–(f), plus MSW-backed tests for the composed `fetchSuggestions` (AC 6–8, 9g, token plumb-through, end-to-end cap).
+2. Implement `mergeResults.ts`: `MAX_RESULTS = 50`, pure `mergeResults` (concat → `localeCompare(sensitivity: 'base')` on `name` → tie-break kind/id → `slice(0, 50)`), and `fetchSuggestions(query, signal, token?)` composing the Story 2.1 `searchGithub` client.
+3. Docs folder + full verification + review gate.
+
 ### Debug Log References
+
+None — implementation went green on first pass after the failing-test run (17/17 new tests, 148/148 total, e2e smoke green).
 
 ### Completion Notes List
 
+- Both `mergeResults` and `fetchSuggestions` live in `mergeResults.ts` (option chosen over a sibling `githubSuggestions.ts` — two small functions over the same types; documented in the feature README).
+- Tie-break implemented as `name` (base) → `kind` (`repo` before `user`, via plain `localeCompare` since `'repo' < 'user'`) → `String(id)` comparison, per the spec's documented assumption.
+- All-or-nothing rejection comes for free from Story 2.1's `Promise.all` inside `searchGithub`; this story adds no catch — typed `GithubSearchError` and `AbortError` both propagate unchanged (verified by MSW tests).
+- Optional `token` is plumbed through to the client as a third parameter; the AR-4 two-argument signature is preserved by binding the token at construction time (documented in TSDoc + README).
+- MANUAL_TESTING.md skipped and PERFORMANCE.md n/a per spec — both decisions stated in the feature README.
+- Verification: `pnpm lint && pnpm typecheck && pnpm test` and `pnpm test:e2e` all green (150 unit/integration + 1 e2e after review fixes); no new dependencies.
+
+### Review gate (pre-PR)
+
+- **Security review (skill):** no qualifying findings — pure function + thin composition over the 2.1 client; no new I/O, logging, injection or token-exposure surface; tests use a dummy token only.
+- **Codex second-pass review:** 3 findings, all triaged and verified:
+  1. *Tie-break not total for mixed-type ids (`1` vs `'1'`) — VALID (theoretical).* `String(id)` comparison collides for `1` vs `'1'`; `GithubResult.id` is typed `number | string`, so the comparator was not total over its domain even though GitHub ids are numeric in practice. **Fixed:** added a final `typeof` tier (`number` before `string`) + regression test with both input orders.
+  2. *AR-4 signature drift — optional `token` param on `fetchSuggestions` — VALID (design).* A 3-arg function with optional `token` is assignable to the AR-4 shape, but Dev Notes require the token binding "at construction time". **Fixed:** replaced with `createFetchSuggestions(token?)` factory returning the exact AR-4 signature, plus an unauthenticated default `fetchSuggestions` export; tests updated (factory token binding + default-instance no-auth test).
+  3. *Missing mixed-type id collision test — VALID.* **Fixed** together with finding 1.
+- Re-verified after fixes: `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e` all green.
+
 ### File List
 
+- `src/features/github-search/mergeResults.ts` — NEW
+- `src/features/github-search/mergeResults.test.ts` — NEW
+- `docs/features/epic-2-github-adapter/2-2-merge-sort-results/README.md` — NEW
+- `docs/implementation-artifacts/2-2-merge-sort-results.md` — UPDATE (status, checkboxes, Dev Agent Record)
+
 ## Change Log
+
+- 2026-07-09: Implemented Story 2.2 — pure merge/sort/cap (`mergeResults`, `MAX_RESULTS`) and composed `createFetchSuggestions`/`fetchSuggestions` (AR-4 contract) with 19 unit/integration tests; feature docs added.
+- 2026-07-09: Review gate — security review clean; 3 Codex findings triaged and fixed (total tie-break via `typeof` tier, construction-time token binding via factory, mixed-id regression test). Status → Review.

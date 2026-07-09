@@ -37,12 +37,17 @@ Technology versions reflect current releases (July 2026).
 
 ## 2. Core Architectural Decisions
 
-### AR-1: Build tooling & runtime — Vite 7 + React 19 + TypeScript strict, pnpm, Node 22
+### AR-1: Build tooling & runtime — Vite + React 19 + TypeScript strict (all latest stable), pnpm, Node 22
 
-- **Decision:** Vite 7 (react plugin) as the build tool and dev server; React 19; TypeScript in
+- **Decision:** Vite (react plugin) as the build tool and dev server; React 19; TypeScript in
   `strict` mode; package manager **pnpm** (lockfile committed); Node 22 (pinned via `engines` and
-  `.nvmrc`). Single package — **no monorepo**. **No Next.js**, no state-management library, no
-  component/autocomplete library of any kind (FR-13).
+  `.nvmrc`). **Version policy (owner decision, 2026-07-09): every dependency is installed at its
+  latest stable release at implementation time** (as of writing: Vite 8, TypeScript 7). If two
+  latest releases are incompatible (e.g. a days-old TypeScript major unsupported by
+  typescript-eslint or the Vite react plugin), hold back the *smallest possible* piece to the
+  newest version that keeps the toolchain green, and record the holdback + reason in the story's
+  Dev Agent Record and feature README. Single package — **no monorepo**. **No Next.js**, no
+  state-management library, no component/autocomplete library of any kind (FR-13).
 - **Rationale:** There is no SEO/SSR requirement (contrast with the previous project) — a static
   client-side sandbox is the lightest thing that satisfies the brief, and Vite gives instant dev
   feedback plus a first-class Vitest pairing (NFR-6 analogue: testability). A monorepo or package

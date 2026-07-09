@@ -1,6 +1,10 @@
+---
+baseline_commit: 0d8100696c3af64642d7eeee3febf0034e08236c
+---
+
 # Story 2.1: GitHub API client with typed errors and optional token
 
-Status: Approved
+Status: Review
 
 ## Story
 
@@ -25,25 +29,25 @@ so that searches work with zero setup and every failure mode — especially rate
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Domain + error types (AC: 4, 6)
-  - [ ] Create `src/features/github-search/types.ts` exporting the `GithubResult` union `{ kind: 'user'|'repo'; id: number|string; name: string; displayPath: string; description?: string; avatarUrl?: string; htmlUrl: string }` and the `GithubSearchError` union exactly as §3.3 defines it (`network` | `http` with `status` | `rate-limit` with `retryAfterSeconds?`). Add TSDoc to every exported member (NFR-4).
-- [ ] Task 2 — Request construction (AC: 1, 2, 3)
-  - [ ] Create `src/features/github-search/githubClient.ts`. Build the two URLs against the module constant base `https://api.github.com`, endpoints `/search/users` and `/search/repositories`, with `q` URL-encoded and `per_page=50`.
-  - [ ] Build a shared headers object: `Accept: application/vnd.github+json`, `X-GitHub-Api-Version: 2022-11-28` (module constant), and conditionally `Authorization: Bearer <token>`. Resolve the token as `argToken ?? import.meta.env.VITE_GITHUB_TOKEN` (prop wins; both may be absent).
-  - [ ] Fire both `fetch` calls with the **same** `signal` passed by the caller, awaited together via `Promise.all`.
-- [ ] Task 3 — Response mapping + defensive validation (AC: 4, 5)
-  - [ ] Map a users response item → `{ kind: 'user', id, name: login, displayPath: login, description: undefined (or bio if present), avatarUrl: avatar_url, htmlUrl: html_url }`.
-  - [ ] Map a repositories response item → `{ kind: 'repo', id, name: <bare name>, displayPath: full_name, description, avatarUrl: owner.avatar_url, htmlUrl: html_url }`.
-  - [ ] Validate by hand: guard `body.items` is an array; for each item verify the required fields exist and are the expected primitive types; normalize `null`/`"N/A"`-style absent values to `undefined`; drop items missing an `htmlUrl` or identity rather than throwing. Do NOT introduce Zod (see Dev Notes).
-- [ ] Task 4 — Error mapping (AC: 6, 7, 8, 9)
-  - [ ] In `githubClient.ts` (the single mapping place), wrap fetch/response handling: a thrown fetch that is **not** an `AbortError` → `{ kind: 'network' }`; re-throw/propagate `AbortError` untouched (AC 8).
-  - [ ] For a non-OK response: if `status === 403` and (`x-ratelimit-remaining === '0'` or a `retry-after` header is present) → `{ kind: 'rate-limit', retryAfterSeconds }`; else `{ kind: 'http', status }`.
-  - [ ] Derive `retryAfterSeconds`: prefer integer parse of `retry-after`; else `x-ratelimit-reset` (epoch seconds) as `Math.max(0, reset - Math.floor(Date.now()/1000))`; else `undefined`.
-  - [ ] Because both fetches run under `Promise.all`, either failing rejects the whole call with the mapped error — full-error, no partial results (AC 9).
-- [ ] Task 5 — Tests (AC: 10)
-  - [ ] `src/features/github-search/githubClient.test.ts` using Vitest + MSW node server (handlers per case; **no fetch stubs**). Cover cases (a)–(i) from AC 10. For header assertions, inspect the intercepted request in the MSW handler. For abort, pass an already/soon-aborted `AbortController.signal` and assert the rejection is the abort, not a `GithubSearchError`.
-- [ ] Task 6 — Verify (AC: all)
-  - [ ] `pnpm lint && pnpm typecheck && pnpm test` all green. No new dependencies. Test-first (write `githubClient.test.ts` red before the client).
+- [x] Task 1 — Domain + error types (AC: 4, 6)
+  - [x] Create `src/features/github-search/types.ts` exporting the `GithubResult` union `{ kind: 'user'|'repo'; id: number|string; name: string; displayPath: string; description?: string; avatarUrl?: string; htmlUrl: string }` and the `GithubSearchError` union exactly as §3.3 defines it (`network` | `http` with `status` | `rate-limit` with `retryAfterSeconds?`). Add TSDoc to every exported member (NFR-4).
+- [x] Task 2 — Request construction (AC: 1, 2, 3)
+  - [x] Create `src/features/github-search/githubClient.ts`. Build the two URLs against the module constant base `https://api.github.com`, endpoints `/search/users` and `/search/repositories`, with `q` URL-encoded and `per_page=50`.
+  - [x] Build a shared headers object: `Accept: application/vnd.github+json`, `X-GitHub-Api-Version: 2022-11-28` (module constant), and conditionally `Authorization: Bearer <token>`. Resolve the token as `argToken ?? import.meta.env.VITE_GITHUB_TOKEN` (prop wins; both may be absent).
+  - [x] Fire both `fetch` calls with the **same** `signal` passed by the caller, awaited together via `Promise.all`.
+- [x] Task 3 — Response mapping + defensive validation (AC: 4, 5)
+  - [x] Map a users response item → `{ kind: 'user', id, name: login, displayPath: login, description: undefined (or bio if present), avatarUrl: avatar_url, htmlUrl: html_url }`.
+  - [x] Map a repositories response item → `{ kind: 'repo', id, name: <bare name>, displayPath: full_name, description, avatarUrl: owner.avatar_url, htmlUrl: html_url }`.
+  - [x] Validate by hand: guard `body.items` is an array; for each item verify the required fields exist and are the expected primitive types; normalize `null`/`"N/A"`-style absent values to `undefined`; drop items missing an `htmlUrl` or identity rather than throwing. Do NOT introduce Zod (see Dev Notes).
+- [x] Task 4 — Error mapping (AC: 6, 7, 8, 9)
+  - [x] In `githubClient.ts` (the single mapping place), wrap fetch/response handling: a thrown fetch that is **not** an `AbortError` → `{ kind: 'network' }`; re-throw/propagate `AbortError` untouched (AC 8).
+  - [x] For a non-OK response: if `status === 403` and (`x-ratelimit-remaining === '0'` or a `retry-after` header is present) → `{ kind: 'rate-limit', retryAfterSeconds }`; else `{ kind: 'http', status }`.
+  - [x] Derive `retryAfterSeconds`: prefer integer parse of `retry-after`; else `x-ratelimit-reset` (epoch seconds) as `Math.max(0, reset - Math.floor(Date.now()/1000))`; else `undefined`.
+  - [x] Because both fetches run under `Promise.all`, either failing rejects the whole call with the mapped error — full-error, no partial results (AC 9).
+- [x] Task 5 — Tests (AC: 10)
+  - [x] `src/features/github-search/githubClient.test.ts` using Vitest + MSW node server (handlers per case; **no fetch stubs**). Cover cases (a)–(i) from AC 10. For header assertions, inspect the intercepted request in the MSW handler. For abort, pass an already/soon-aborted `AbortController.signal` and assert the rejection is the abort, not a `GithubSearchError`.
+- [x] Task 6 — Verify (AC: all)
+  - [x] `pnpm lint && pnpm typecheck && pnpm test` all green. No new dependencies. Test-first (write `githubClient.test.ts` red before the client).
 
 ## Documentation deliverables
 
@@ -110,10 +114,43 @@ Mapping happens in **exactly one place** (`githubClient.ts`); consuming UI (2.3)
 
 ### Agent Model Used
 
+Claude Fable 5 (claude-fable-5) via Claude Code
+
+### Implementation Plan
+
+1. Test-first: write `githubClient.test.ts` (Vitest + MSW node server, no fetch stubs) covering AC 10 (a)–(i) — confirmed red (module missing).
+2. `types.ts`: `GithubResult` shape + `GithubSearchError` union copied exactly from §3.3, TSDoc on all exports.
+3. `githubClient.ts`: `searchGithub(query, signal, token?)` — URL construction via `URL`/`URLSearchParams` (q encoded, `per_page=50`), shared headers (`Accept`, pinned `X-GitHub-Api-Version: 2022-11-28`, conditional `Authorization: Bearer`, token resolution `argToken ?? import.meta.env.VITE_GITHUB_TOKEN`), two fetches under `Promise.all` sharing the caller's signal, by-hand defensive mapping, single-place error mapping.
+4. Docs folder + full verification.
+
 ### Debug Log References
+
+- Initial red run: module not found (expected). After implementation: 15/15 green.
+- One typecheck fix in the test file: MSW `HttpResponse.json` rejects `unknown` — narrowed the helper params to `Record<string, unknown>`.
 
 ### Completion Notes List
 
+- Client returns `{ users, repos }` (two mapped lists, unmerged) — merge/sort/cap is Story 2.2's composition; this keeps the 2.2 module pure.
+- Errors are thrown as plain `GithubSearchError` union objects (per §3.3 — consumers switch on `kind`); `AbortError` is re-thrown untouched, also when thrown while reading the response body.
+- Unparseable 2xx body is treated as shape drift → zero items, not a failure (NFR-3 resilience).
+- 403 without rate-limit headers stays `{ kind: 'http', status: 403 }` — covered by a dedicated test beyond the AC list.
+- Parallelism is genuinely asserted: the test gates both MSW handlers and verifies both requests are in flight before either response resolves.
+- No new dependencies. `pnpm lint && pnpm typecheck && pnpm test` green (131 tests, 8 files) + `pnpm test:e2e` green.
+
+### Pre-PR review gate
+
+- **Security review** (skill + verification subagent): no findings. URL construction is injection-safe (`URL`/`searchParams`, hardcoded endpoints/base), token only ever sent as a Bearer header to the fixed `api.github.com` HTTPS origin, error union leaks no response data, no secrets in the repo. Noted (not a finding): `VITE_GITHUB_TOKEN` is bundled client-side by design of the brief.
+- **Codex second-pass review**: 2 Low findings, both confirmed valid and fixed — (1) `optionalString()` did not normalize `"N/A"`-style placeholder values to `undefined` as Task 3 requires → now trims and normalizes `""`/`"N/A"` to `undefined`; (2) missing test for that path → added a dedicated MSW-backed test. No correctness or security findings. No false positives to document.
+- Full verification re-run after fixes: `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e` all green.
+
 ### File List
 
+- `src/features/github-search/types.ts` — NEW
+- `src/features/github-search/githubClient.ts` — NEW
+- `src/features/github-search/githubClient.test.ts` — NEW
+- `docs/features/epic-2-github-adapter/2-1-github-api-client/README.md` — NEW
+- `docs/implementation-artifacts/2-1-github-api-client.md` — UPDATE (status, checkboxes, Dev Agent Record)
+
 ## Change Log
+
+- 2026-07-09: Implemented GitHub API client with typed errors and optional token (Story 2.1) — all ACs satisfied, 15 new MSW-backed tests, docs folder added. Status → Review.

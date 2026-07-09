@@ -56,3 +56,6 @@ docs/design/bundles/
 
 # Local agent handoff prompts — kept locally, not committed.
 docs/_handoff/
+
+# SDD progress ledger — local orchestration scratch, not app code.
+/.superpowers/

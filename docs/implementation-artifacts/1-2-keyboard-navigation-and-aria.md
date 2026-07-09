@@ -1,6 +1,10 @@
+---
+baseline_commit: e99b1824cea5a3ce26e67b058572430e9be0790a
+---
+
 # Story 1.2: Keyboard navigation and ARIA combobox wiring in the hook
 
-Status: Approved
+Status: review
 
 ## Story
 
@@ -27,26 +31,26 @@ so that any UI rendered over the hook is fully keyboard-operable and screen-read
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Extend types (`src/lib/autocomplete/types.ts`) (AC: 6, 7, 8, 10)
-  - [ ] Add the prop-getter signatures to the `handlers` type: `getInputProps()`, `getListboxProps()`, `getItemProps(item: T, index: number)`, plus `onKeyDown`, `onItemClick(item, index)`, `onItemHover(index)`, and `getStatusMessage()` (or a `statusMessage` field on state). Require `onSelect(item: T) => void` and `getItemKey(item: T) => string` in the hook options now (they were optional/declared in 1.1). TSDoc each.
-  - [ ] Decide and document (Dev Agent Record): whether `statusMessage` is a derived field on `state` or a `handlers.getStatusMessage()`. Default recommendation: a derived `state.statusMessage` for simplicity, or a getter with optional message overrides passed from options — pick one and keep it consistent for 1.3.
-- [ ] Task 2 — **Write tests first** via a minimal harness (`src/lib/autocomplete/useAutocomplete.keyboard.test.tsx`) (AC: 11) — TEST-FIRST
-  - [ ] Build a **test-only** harness component `<Harness items=… onSelect=… />` that calls `useAutocomplete`, renders `<input {...getInputProps()} />` and `<ul {...getListboxProps()}>` with `<li {...getItemProps(item, i)}>` per item, driven by a stubbed `fetchSuggestions` that resolves the provided items (fake timers to flush debounce). The harness is test-only and is discarded — the shipped generic component is 1.3.
-  - [ ] **Navigation + clamp (no wrap):** open with N=3; ArrowDown → index 0 highlighted (`aria-selected` on option 0, `aria-activedescendant` = option-0 id); ArrowDown×2 more → index 2; one more ArrowDown → **still 2** (clamp, no wrap). ArrowUp back to 0; one more ArrowUp → **still 0** (clamp).
-  - [ ] **Home/End:** from mid-list, `End` → index N-1; `Home` → index 0.
-  - [ ] **Enter:** highlight index 1, press Enter → `onSelect` called once with `items[1]`; Enter with no highlight → `onSelect` not called.
-  - [ ] **Click + hover convergence:** clicking option 2 calls the same selection path (`onSelect` with `items[2]`); `mouseenter`/`mousemove` on option 1 sets `highlightedIndex` to 1 (asserted via `aria-selected`).
-  - [ ] **Escape:** open + highlight, press Escape → listbox gone (`isOpen:false` / not rendered), `aria-selected` cleared / `highlightedIndex` null, input value unchanged, `document.activeElement` is still the input.
-  - [ ] **ARIA wiring:** assert input has `role="combobox"`, `aria-autocomplete="list"`, `aria-expanded` reflecting open state, `aria-controls` === listbox id; listbox has `role="listbox"` + matching id; options have `role="option"` + stable ids from `getItemKey` + correct `aria-selected`.
-  - [ ] **Status text:** assert `statusMessage` (or `getStatusMessage()`) yields `'Searching…'` / `'3 results'` / `'No matches'` / the error message across states.
-- [ ] Task 3 — Implement reducers + getters in the hook (`src/lib/autocomplete/useAutocomplete.ts`) (AC: 1–10)
-  - [ ] Add ArrowDown/ArrowUp/Home/End highlight reducers with clamping (no wrap), Enter (→ `onSelect(items[highlightedIndex])`, guarded), Escape (→ close + clear highlight, keep query, keep focus), all inside `handlers.onKeyDown` with `preventDefault()` on consumed keys.
-  - [ ] Implement `onItemClick` (→ select) and `onItemHover` (→ set highlight), routing mouse through the same paths as keyboard.
-  - [ ] Implement `useId()`-based id scheme and the three prop getters; compute `aria-activedescendant` from the highlighted option id.
-  - [ ] Implement `statusMessage` derivation from `status`/`items.length`/`error.message`; keep strings generic and (optionally) overridable via options — no GitHub terms.
-  - [ ] Ensure `highlightedIndex` resets to `null` on new query / new results / close (consistent with 1.1).
-- [ ] Task 4 — Verify (AC: all)
-  - [ ] `pnpm lint && pnpm typecheck && pnpm test` green. Lib-boundary rule (AR-2) still clean; no GitHub strings in `src/lib/autocomplete/`.
+- [x] Task 1 — Extend types (`src/lib/autocomplete/types.ts`) (AC: 6, 7, 8, 10)
+  - [x] Add the prop-getter signatures to the `handlers` type: `getInputProps()`, `getListboxProps()`, `getItemProps(item: T, index: number)`, plus `onKeyDown`, `onItemClick(item, index)`, `onItemHover(index)`, and `getStatusMessage()` (or a `statusMessage` field on state). Require `onSelect(item: T) => void` and `getItemKey(item: T) => string` in the hook options now (they were optional/declared in 1.1). TSDoc each.
+  - [x] Decide and document (Dev Agent Record): whether `statusMessage` is a derived field on `state` or a `handlers.getStatusMessage()`. Default recommendation: a derived `state.statusMessage` for simplicity, or a getter with optional message overrides passed from options — pick one and keep it consistent for 1.3.
+- [x] Task 2 — **Write tests first** via a minimal harness (`src/lib/autocomplete/useAutocomplete.keyboard.test.tsx`) (AC: 11) — TEST-FIRST
+  - [x] Build a **test-only** harness component `<Harness items=… onSelect=… />` that calls `useAutocomplete`, renders `<input {...getInputProps()} />` and `<ul {...getListboxProps()}>` with `<li {...getItemProps(item, i)}>` per item, driven by a stubbed `fetchSuggestions` that resolves the provided items (fake timers to flush debounce). The harness is test-only and is discarded — the shipped generic component is 1.3.
+  - [x] **Navigation + clamp (no wrap):** open with N=3; ArrowDown → index 0 highlighted (`aria-selected` on option 0, `aria-activedescendant` = option-0 id); ArrowDown×2 more → index 2; one more ArrowDown → **still 2** (clamp, no wrap). ArrowUp back to 0; one more ArrowUp → **still 0** (clamp).
+  - [x] **Home/End:** from mid-list, `End` → index N-1; `Home` → index 0.
+  - [x] **Enter:** highlight index 1, press Enter → `onSelect` called once with `items[1]`; Enter with no highlight → `onSelect` not called.
+  - [x] **Click + hover convergence:** clicking option 2 calls the same selection path (`onSelect` with `items[2]`); `mouseenter`/`mousemove` on option 1 sets `highlightedIndex` to 1 (asserted via `aria-selected`).
+  - [x] **Escape:** open + highlight, press Escape → listbox gone (`isOpen:false` / not rendered), `aria-selected` cleared / `highlightedIndex` null, input value unchanged, `document.activeElement` is still the input.
+  - [x] **ARIA wiring:** assert input has `role="combobox"`, `aria-autocomplete="list"`, `aria-expanded` reflecting open state, `aria-controls` === listbox id; listbox has `role="listbox"` + matching id; options have `role="option"` + stable ids from `getItemKey` + correct `aria-selected`.
+  - [x] **Status text:** assert `statusMessage` (or `getStatusMessage()`) yields `'Searching…'` / `'3 results'` / `'No matches'` / the error message across states.
+- [x] Task 3 — Implement reducers + getters in the hook (`src/lib/autocomplete/useAutocomplete.ts`) (AC: 1–10)
+  - [x] Add ArrowDown/ArrowUp/Home/End highlight reducers with clamping (no wrap), Enter (→ `onSelect(items[highlightedIndex])`, guarded), Escape (→ close + clear highlight, keep query, keep focus), all inside `handlers.onKeyDown` with `preventDefault()` on consumed keys.
+  - [x] Implement `onItemClick` (→ select) and `onItemHover` (→ set highlight), routing mouse through the same paths as keyboard.
+  - [x] Implement `useId()`-based id scheme and the three prop getters; compute `aria-activedescendant` from the highlighted option id.
+  - [x] Implement `statusMessage` derivation from `status`/`items.length`/`error.message`; keep strings generic and (optionally) overridable via options — no GitHub terms.
+  - [x] Ensure `highlightedIndex` resets to `null` on new query / new results / close (consistent with 1.1).
+- [x] Task 4 — Verify (AC: all)
+  - [x] `pnpm lint && pnpm typecheck && pnpm test` green. Lib-boundary rule (AR-2) still clean; no GitHub strings in `src/lib/autocomplete/`.
 
 ## Documentation deliverables
 
@@ -103,14 +107,57 @@ Part of Definition of Done (see CLAUDE.md). Create the task documentation folder
 
 ### Agent Model Used
 
+Claude Fable 5 (claude-fable-5)
+
+### Implementation Plan
+
+1. Branch `story/1-2-keyboard-navigation-and-aria`, baseline captured in frontmatter.
+2. Task 1: extend `types.ts` — prop-getter prop types, generic `AutocompleteHandlers<T>`, derived `state.statusMessage`, `onSelect`/`getItemKey` required, `statusMessages` overrides.
+3. Task 2 (test-first): `useAutocomplete.keyboard.test.tsx` with a test-only harness spreading the getters; 19 tests written and confirmed failing (4 more added during review triage) before implementation.
+4. Task 3: keyboard reducers (clamp no-wrap, Home/End, Enter, Escape), mouse handlers, `useId()` id scheme, three prop getters, status derivation, highlight reset on new results.
+5. Task 4: full verification + docs folder + review gate + PR.
+
 ### Debug Log References
+
+- RED run: 19/19 keyboard tests failed (`getInputProps is not a function`) before implementation.
+- Initial GREEN attempt used a latest-state ref assigned during render; `react-hooks/refs` lint rejected it (and it would have returned stale ARIA from getters called during render). Reworked: handlers/getters close over `state` directly with proper deps.
 
 ### Completion Notes List
 
+- **statusMessage decision (Task 1):** derived field on `state` (spec's default recommendation), computed at render time, never stored; optional overrides via `options.statusMessages` (`loading`, `empty`, `results(count)`); error text comes from `error.message`. 1.3 must keep this shape.
+- Success message pluralizes (`1 result` / `3 results`); the AC's literal `'N results'` form is asserted with N=3 and remains override-friendly.
+- ArrowUp from no highlight clamps to index 0 (spec fixes only ArrowDown-from-null; symmetric clamp chosen and documented in the feature README).
+- Arrow/Home/End are consumed (preventDefault) whenever the dropdown is open even with 0 items, so the caret never moves under an open popup; Enter is consumed only when it selects; Escape only when open; closed dropdown consumes nothing.
+- Hover uses `mousemove` (not `mouseenter`) so a list scrolling under a resting pointer doesn't steal the highlight; highlight set is a no-op when unchanged.
+- Selection does not auto-close the dropdown — policy stays with the consumer/adapter (1.3/Epic 2).
+- 1.1 fetch-lifecycle tests updated only for the now-required `getItemKey`/`onSelect` options and the new `statusMessage` field in the initial-state assertion; no behavioral changes.
+- Verification: `pnpm lint`, `pnpm typecheck`, `pnpm test` (72 tests, 6 files), `pnpm test:e2e` (1 smoke) — all green. Lib boundary clean (zero `features/`/app imports, zero GitHub strings in the story's surface).
+
+### Pre-PR review gate (mandatory)
+
+- **Security review (/security-review skill):** no findings. Checked XSS/injection (no unsafe sinks; React-escaped rendering only), untrusted data → DOM ids (setAttribute path, not exploitable), error-data exposure (only the generic constant reaches the DOM; raw `cause` never rendered), secrets, prototype pollution, event handling.
+- **Codex second-pass review (codex-rescue):** 8 findings, all triaged empirically:
+  - **#1 High — CONFIRMED & FIXED.** Escape did not cancel a pending debounce timer; the queued fetch reopened the dropdown ~300 ms later. Reproduced with a failing test first; fix: `close()` now clears the debounce timer and aborts the in-flight fetch. Test: "cancels a debounced fetch queued before Escape".
+  - **#2 High — FALSE POSITIVE (as designed).** "Stale items navigable during a new query's debounce window": previous results intentionally stay visible until new ones arrive (1.1 behavior, standard combobox UX, avoids flicker). Selection passes the actual on-screen item object, and AC 5 only requires the highlight reset — which happens and is test-covered.
+  - **#3 Med — CONFIRMED & FIXED.** `statusMessages` had no error override, so an adapter could not surface source-specific error text (e.g. rate limit) through the live region. Added `statusMessages.error?: (error) => string` (default remains the generic `error.message`); AC 8 override-friendliness now covers all four texts. Test-first.
+  - **#4/#5 — no findings** (React 19 correctness, architecture boundary) per reviewer.
+  - **#6 Med test gap — FIXED** by the new Escape-cancels-pending-fetch test.
+  - **#7 Low vacuous assertion — FIXED.** Error status test now asserts the exact generic default text plus a new override test asserting adapter text derived from `error.cause`.
+  - **#8 Low test gap — FIXED** with N=1 clamp test and N=0 open-empty-popup test (nav keys consumed, no highlight, Enter no-op). The "new query while fetch pending" half is covered by the #2 rationale + existing 1.1 stale-response tests.
+- **Post-fix re-verification:** `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e` all green (72 tests).
+
 ### File List
+
+- `src/lib/autocomplete/types.ts` — UPDATE
+- `src/lib/autocomplete/useAutocomplete.ts` — UPDATE
+- `src/lib/autocomplete/useAutocomplete.keyboard.test.tsx` — NEW
+- `src/lib/autocomplete/useAutocomplete.test.tsx` — UPDATE
+- `docs/features/epic-1-core-autocomplete/1-2-keyboard-navigation-and-aria/README.md` — NEW
+- `docs/implementation-artifacts/1-2-keyboard-navigation-and-aria.md` — UPDATE (permitted sections)
 
 ## Change Log
 
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
 | 2026-07-09 | 0.1 | Initial draft (headless create-story, Approved) | bmad-create-story |
+| 2026-07-09 | 0.2 | Implemented keyboard navigation, ARIA prop getters, id scheme, status text; 23 RTL harness tests; all ACs satisfied; status → review | dev agent |

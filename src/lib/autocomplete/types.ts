@@ -5,7 +5,11 @@
  * fully generic and has zero knowledge of any concrete data source.
  */
 
-import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
+import type {
+  ChangeEvent as ReactChangeEvent,
+  KeyboardEvent as ReactKeyboardEvent,
+  MouseEvent as ReactMouseEvent,
+} from 'react'
 
 /**
  * The dropdown lifecycle state. This discriminant is the single source of
@@ -52,36 +56,86 @@ export type AutocompleteState<T> = {
   isOpen: boolean
   /** Present only when `status` is `'error'`. */
   error?: AutocompleteError
+  /**
+   * Text for the visually-hidden `aria-live="polite"` status region the
+   * component renders (1.3). Derived from the lifecycle state:
+   * loading → "Searching…", success → "N results", empty → "No matches",
+   * error → the error message, idle/closed → `''`. Generic, source-agnostic
+   * defaults; overridable via {@link UseAutocompleteOptions.statusMessages}.
+   */
+  statusMessage: string
+}
+
+/**
+ * Props emitted by `getInputProps()` for the combobox `<input>`.
+ *
+ * Focus never leaves the input (activedescendant technique): the highlighted
+ * option is referenced via `aria-activedescendant`, never DOM-focused.
+ * A visible `<label>`/`aria-label` is supplied by the consuming component,
+ * not by the getter.
+ */
+export type AutocompleteInputProps = {
+  role: 'combobox'
+  'aria-expanded': boolean
+  /** Id of the listbox popup this input controls. */
+  'aria-controls': string
+  'aria-autocomplete': 'list'
+  /** Id of the highlighted option, or `undefined` when nothing is highlighted. */
+  'aria-activedescendant': string | undefined
+  /** Controlled value — always equals `state.query`. */
+  value: string
+  onChange: (event: ReactChangeEvent<HTMLInputElement>) => void
+  onKeyDown: (event: ReactKeyboardEvent<HTMLInputElement>) => void
+}
+
+/** Props emitted by `getListboxProps()` for the popup list element. */
+export type AutocompleteListboxProps = {
+  role: 'listbox'
+  id: string
+}
+
+/** Props emitted by `getItemProps(item, index)` for each option element. */
+export type AutocompleteItemProps = {
+  role: 'option'
+  /** Stable per-item id derived from `getItemKey` (referenced by `aria-activedescendant`). */
+  id: string
+  /** `true` only on the keyboard/hover-highlighted option. */
+  'aria-selected': boolean
+  /** Selects the item — same selection path as Enter. */
+  onClick: (event: ReactMouseEvent<HTMLElement>) => void
+  /** Moves the highlight to this item — same highlight state as Arrow keys. */
+  onMouseMove: (event: ReactMouseEvent<HTMLElement>) => void
 }
 
 /**
  * The single handlers object returned by `useAutocomplete<T>`.
  *
- * The full §3.4 handler surface is declared now so story 1.2 can implement
- * the keyboard/item handlers without breaking the type contract. In this
- * story only `onInputChange` and `close` carry behavior; the rest are
- * wired-up no-ops.
+ * All key logic lives in `onKeyDown`; mouse interaction routes through the
+ * same selection/highlight paths as the keyboard (§3.4). The three prop
+ * getters are spread by the consuming component so it cannot mis-wire ARIA.
  */
-export type AutocompleteHandlers = {
+export type AutocompleteHandlers<T> = {
   /** Feeds a new input value into the hook (threshold + debounce applied). */
   onInputChange: (value: string) => void
   /** Closes the dropdown and resets the highlight; the query is kept. */
   close: () => void
   /**
-   * Keyboard navigation (ArrowDown/ArrowUp/Enter/Escape).
-   * Implemented in 1.2 — currently a no-op.
+   * Keyboard navigation: ArrowDown/ArrowUp (clamped at the ends, no wrap),
+   * Home/End, Enter (select highlighted), Escape (close, keep query).
+   * Calls `preventDefault()` only on the keys it consumes; everything else
+   * passes through untouched.
    */
-  onKeyDown: (event: ReactKeyboardEvent) => void
-  /**
-   * Selects the item at `index` via pointer.
-   * Implemented in 1.2 — currently a no-op.
-   */
-  onItemClick: (index: number) => void
-  /**
-   * Moves the highlight to the hovered item at `index`.
-   * Implemented in 1.2 — currently a no-op.
-   */
+  onKeyDown: (event: ReactKeyboardEvent<HTMLInputElement>) => void
+  /** Selects `item` via pointer — identical outcome to Enter on the highlight. */
+  onItemClick: (item: T, index: number) => void
+  /** Moves the highlight to the hovered item at `index`. */
   onItemHover: (index: number) => void
+  /** ARIA/value/handler props for the combobox `<input>` — spread verbatim. */
+  getInputProps: () => AutocompleteInputProps
+  /** ARIA props for the popup list element — spread verbatim. */
+  getListboxProps: () => AutocompleteListboxProps
+  /** ARIA + interaction props for the option at `index` — spread verbatim. */
+  getItemProps: (item: T, index: number) => AutocompleteItemProps
 }
 
 /**
@@ -95,14 +149,39 @@ export type UseAutocompleteOptions<T> = {
    */
   fetchSuggestions: (query: string, signal: AbortSignal) => Promise<T[]>
   /**
-   * Stable key extractor for an item. Unused by this story; consumed by the
-   * rendering/ARIA layer from 1.2 onward.
+   * Stable key extractor for an item. Option ids derive from it
+   * (`${base}-option-${getItemKey(item)}`), so keys must be unique within a
+   * result set and stable across renders.
    */
-  getItemKey?: (item: T) => string
+  getItemKey: (item: T) => string
+  /**
+   * Called with the selected item when the user presses Enter on the
+   * highlighted option or clicks an option. What selection *does* (e.g.
+   * navigation) is entirely the consumer's concern.
+   */
+  onSelect: (item: T) => void
   /** Minimum query length (inclusive) before any request is issued. @default 3 */
   minChars?: number
   /** Debounce window in milliseconds between typing and fetching. @default 300 */
   debounceMs?: number
+  /**
+   * Overrides for the derived {@link AutocompleteState.statusMessage} live
+   * region text. Defaults are generic and source-agnostic; an adapter can
+   * replace any of them without the lib learning about the data source.
+   */
+  statusMessages?: {
+    /** Shown while a fetch is in flight. @default 'Searching…' */
+    loading?: string
+    /** Shown when the fetch resolved with zero items. @default 'No matches' */
+    empty?: string
+    /** Builds the success message. @default count => `${count} result(s)` */
+    results?: (count: number) => string
+    /**
+     * Builds the error message, e.g. from the preserved `error.cause`.
+     * @default the generic `error.message`
+     */
+    error?: (error: AutocompleteError) => string
+  }
 }
 
 /**
@@ -111,5 +190,5 @@ export type UseAutocompleteOptions<T> = {
  */
 export type UseAutocompleteResult<T> = {
   state: AutocompleteState<T>
-  handlers: AutocompleteHandlers
+  handlers: AutocompleteHandlers<T>
 }

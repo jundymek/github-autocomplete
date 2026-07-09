@@ -1,0 +1,313 @@
+/**
+ * Autocomplete<T> — self-contained CSS Module (Story 1.3, AR-5, FR-15, NFR-5).
+ *
+ * Every themeable property reads `var(--ac-*, <fallback>)` with the design
+ * fallback baked in verbatim (docs/design/design-tokens.md /
+ * component-states.html), so the component is fully styled in an unstyled
+ * host. Hosts theme it by setting `--ac-*` on any ancestor — never by
+ * piercing these scoped selectors. This file defines no token values and no
+ * global selectors — it only consumes tokens via `var()`.
+ */
+
+/* Self-contained box model: the component must render identically whether or
+   not the host ships a border-box reset. */
+.root,
+.root *,
+.pop,
+.pop * {
+  box-sizing: border-box;
+}
+
+.root {
+  position: relative;
+  width: 100%;
+  font-family: var(--ac-font-ui, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
+}
+
+.input {
+  width: 100%;
+  padding: 10px 40px 10px 12px;
+  font: 400 15px/1.4 var(--ac-font-ui, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
+  color: var(--ac-color-text, #1f2328);
+  background: var(--ac-color-surface, #ffffff);
+  border: 1px solid var(--ac-color-border, #d1d9e0);
+  border-radius: var(--ac-radius, 10px);
+  outline: none;
+}
+
+.input::placeholder {
+  color: var(--ac-color-text-muted, #59636e);
+}
+
+/* Focus ring: 2px accent offset by 2px of surface (design state 09). */
+.input:focus {
+  border-color: var(--ac-color-accent, #6639ba);
+  box-shadow:
+    0 0 0 2px var(--ac-color-surface, #ffffff),
+    0 0 0 4px var(--ac-color-accent, #6639ba);
+}
+
+/* Trailing slot with the 3-dot loading pulse. */
+.slot {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  display: flex;
+  gap: 4px;
+}
+
+.dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ac-color-accent, #6639ba);
+  animation: ac-pulse 900ms infinite ease-in-out;
+}
+
+.dot:nth-child(2) {
+  animation-delay: 150ms;
+}
+
+.dot:nth-child(3) {
+  animation-delay: 300ms;
+}
+
+@keyframes ac-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Popup chrome. Position (fixed top/left/width) is set inline by the portal
+   positioning effect; everything visual lives here. */
+.pop {
+  background: var(--ac-color-surface, #ffffff);
+  border: 1px solid var(--ac-color-border, #d1d9e0);
+  border-radius: var(--ac-radius, 10px);
+  box-shadow: var(--ac-shadow, 0 8px 24px rgba(31,35,40,.12), 0 1px 3px rgba(31,35,40,.08));
+  padding: 6px;
+  z-index: var(--ac-z-index, 1000);
+  font-family: var(--ac-font-ui, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
+  animation: ac-in 120ms ease-out;
+}
+
+@keyframes ac-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dot {
+    animation: none;
+    opacity: 0.7;
+  }
+
+  .pop {
+    animation: none;
+  }
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: var(--ac-dropdown-max-height, 368px);
+  overflow-y: auto;
+}
+
+/* Row chrome: grid columns for glyph / body / kind; content is renderItem's. */
+.item {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: var(--ac-space, 8px) 10px;
+  border-radius: var(--ac-radius-item, 6px);
+  cursor: pointer;
+  border-left: 2px solid transparent;
+}
+
+.item[aria-selected='true'] {
+  background: var(--ac-color-highlight, #f5f1fb);
+  border-left-color: var(--ac-color-accent, #6639ba);
+}
+
+/* --- Item content helpers (design row anatomy; used by adapters via
+       renderItem — the generic component itself renders none of these). --- */
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #c9b7ec, #8fb0d9);
+}
+
+.repoicon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #eef1f6;
+  display: grid;
+  place-items: center;
+  color: var(--ac-color-text-muted, #59636e);
+  font: 500 13px/1 var(--ac-font-mono, ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, monospace);
+}
+
+.name {
+  font: 500 14px/1.35 var(--ac-font-ui, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
+  color: var(--ac-color-text, #1f2328);
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.path {
+  font: 400 12.5px/1 var(--ac-font-mono, ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, monospace);
+  color: var(--ac-color-text-muted, #59636e);
+}
+
+.name mark {
+  background: none;
+  color: var(--ac-color-accent, #6639ba);
+  font-weight: 600;
+}
+
+.meta {
+  font-size: 12.5px;
+  color: var(--ac-color-text-muted, #59636e);
+  margin-top: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kind {
+  font: 500 10.5px/1 var(--ac-font-mono, ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, monospace);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ac-color-text-muted, #59636e);
+  align-self: start;
+  padding-top: 3px;
+}
+
+/* Footer — the contract narration line (design "signature element"). */
+.foot {
+  border-top: 1px solid var(--ac-color-border, #d1d9e0);
+  margin: 6px -6px -6px;
+  padding: var(--ac-space, 8px) 14px;
+  font: 500 11.5px/1 var(--ac-font-mono, ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, monospace);
+  letter-spacing: 0.04em;
+  color: var(--ac-color-text-muted, #59636e);
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* State blocks: below-threshold hint, empty, error, warning. */
+.state {
+  padding: 22px 16px;
+  text-align: center;
+}
+
+.stateTitle {
+  font: 500 14px/1.4 var(--ac-font-ui, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
+  color: var(--ac-color-text, #1f2328);
+}
+
+.stateDesc {
+  font-size: 12.5px;
+  color: var(--ac-color-text-muted, #59636e);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+.error .stateTitle {
+  color: var(--ac-color-danger, #cf222e);
+}
+
+.warn {
+  background: var(--ac-color-warning-bg, #fff8c5);
+  border-radius: var(--ac-radius-item, 6px);
+  text-align: left;
+  padding: 14px 16px;
+}
+
+.warn .stateTitle {
+  color: var(--ac-color-warning, #9a6700);
+}
+
+.retry {
+  margin-top: 10px;
+  display: inline-block;
+  font: 500 13px/1 var(--ac-font-ui, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
+  color: var(--ac-color-accent, #6639ba);
+  background: none;
+  border: 1px solid var(--ac-color-border, #d1d9e0);
+  border-radius: var(--ac-radius-item, 6px);
+  padding: 7px 12px;
+  cursor: pointer;
+}
+
+.retry:focus-visible {
+  outline: 2px solid var(--ac-color-accent, #6639ba);
+  outline-offset: 2px;
+}
+
+/* Skeleton rows shown while loading. */
+.skel {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 10px;
+  padding: var(--ac-space, 8px) 10px;
+  align-items: center;
+}
+
+.skelCircle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #e9edf3;
+}
+
+.skelLine {
+  height: 10px;
+  border-radius: 5px;
+  background: #e9edf3;
+  width: 70%;
+}
+
+.skel:nth-child(2) .skelLine {
+  width: 52%;
+}
+
+.skel:nth-child(3) .skelLine {
+  width: 61%;
+}
+
+/* Live-region success accent (documented token surface; used by hosts). */
+.ok {
+  color: var(--ac-color-success, #1a7f37);
+}
+
+/* Visually hidden — the aria-live status region. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

@@ -9,6 +9,7 @@ import type {
   ChangeEvent as ReactChangeEvent,
   KeyboardEvent as ReactKeyboardEvent,
   MouseEvent as ReactMouseEvent,
+  ReactNode,
 } from 'react'
 
 /**
@@ -191,4 +192,111 @@ export type UseAutocompleteOptions<T> = {
 export type UseAutocompleteResult<T> = {
   state: AutocompleteState<T>
   handlers: AutocompleteHandlers<T>
+}
+
+/**
+ * Visual tone of the rendered error block. The generic component knows no
+ * error *causes* — an adapter that wants the amber callout supplies
+ * `tone: 'warning'` via {@link AutocompleteMessages.error} without the lib
+ * learning what produced the failure.
+ */
+export type AutocompleteErrorTone = 'error' | 'warning'
+
+/**
+ * What the error state displays, produced by the
+ * {@link AutocompleteMessages.error} override (or the built-in default).
+ */
+export type AutocompleteErrorContent = {
+  /** Headline of the error block. @default 'Search failed' */
+  title: ReactNode
+  /** Optional supporting line under the title. @default the hook's `error.message` */
+  description?: ReactNode
+  /** Visual variant: danger text vs. amber callout. @default 'error' */
+  tone?: AutocompleteErrorTone
+  /** Whether the "Try again" retry button is rendered. @default true */
+  retryable?: boolean
+}
+
+/**
+ * Overrides for the texts the popup displays. All defaults are generic and
+ * data-source-agnostic; adapters supply source-specific wording here.
+ * (Live-region announcement texts are separate — see
+ * {@link UseAutocompleteOptions.statusMessages}.)
+ */
+export type AutocompleteMessages = {
+  /**
+   * Hint shown while the query is below `minChars`.
+   * @default remaining => `Type {remaining} more character(s) to search`
+   */
+  belowThreshold?: (remainingChars: number) => ReactNode
+  /**
+   * Title of the empty state. @default query => `No matches for "{query}"`
+   */
+  empty?: (query: string) => ReactNode
+  /** Supporting line of the empty state. @default 'Check the spelling or try a shorter query.' */
+  emptyHint?: ReactNode
+  /**
+   * Maps the hook's error to what the error block displays (texts, tone,
+   * retryability). @default `{ title: 'Search failed', description: error.message }`
+   */
+  error?: (error: AutocompleteError) => AutocompleteErrorContent
+  /** Label of the retry button. @default 'Try again' */
+  retryLabel?: ReactNode
+}
+
+/**
+ * Snapshot handed to {@link AutocompleteProps.renderFooter} so a host can
+ * render its own contract line for any state.
+ */
+export type AutocompleteFooterContext = {
+  /** Current lifecycle status ('idle' while below the threshold). */
+  status: AutocompleteStatus
+  /** The current query. */
+  query: string
+  /** Number of rendered suggestions (0 unless status is 'success'). */
+  resultCount: number
+  /** The effective minimum query length. */
+  minChars: number
+  /** `true` when the popup shows the below-threshold hint. */
+  belowThreshold: boolean
+}
+
+/**
+ * Public props of the generic `Autocomplete<T>` component (AR-4 — the
+ * component's entire public surface). `T` is unconstrained beyond what
+ * `getItemKey` needs; no data-source-specific types appear anywhere here.
+ */
+export type AutocompleteProps<T> = {
+  /** The injected data source — see {@link UseAutocompleteOptions.fetchSuggestions}. */
+  fetchSuggestions: (query: string, signal: AbortSignal) => Promise<T[]>
+  /**
+   * Renders one suggestion row's content. The component provides the row
+   * chrome (grid, highlight background, accent bar); the content — glyphs,
+   * names, metadata — is entirely the host's.
+   */
+  renderItem: (item: T, state: { highlighted: boolean }) => ReactNode
+  /** Stable key extractor — see {@link UseAutocompleteOptions.getItemKey}. */
+  getItemKey: (item: T) => string
+  /** Called when the user selects an item (Enter or click behave identically). */
+  onSelect: (item: T) => void
+  /** Input placeholder. @default 'Search…' */
+  placeholder?: string
+  /** Accessible name of the combobox input (`aria-label`). @default 'Search' */
+  label?: string
+  /** Minimum query length before any request is issued. @default 3 */
+  minChars?: number
+  /** Debounce window in milliseconds. @default 300 */
+  debounceMs?: number
+  /** Display-text overrides for the popup states. */
+  messages?: AutocompleteMessages
+  /** Live-region announcement overrides, passed through to the hook. */
+  statusMessages?: UseAutocompleteOptions<T>['statusMessages']
+  /**
+   * Replaces the default footer content for the given state. Return `null`
+   * to render no footer. The default narrates the interaction contract
+   * ("min N characters", "searching…", "N results · sorted A→Z",
+   * "↑↓ browse · ↵ open", "esc to close"); "sorted A→Z" is only a label —
+   * sorting itself is the data source's responsibility.
+   */
+  renderFooter?: (context: AutocompleteFooterContext) => ReactNode
 }

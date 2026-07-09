@@ -17,6 +17,12 @@ function createDeferred<T>() {
 
 const DEBOUNCE_MS = 300
 
+/** Required-by-1.2 options that are irrelevant to the fetch-lifecycle tests. */
+const baseOptions = {
+  getItemKey: (item: Item) => item.id,
+  onSelect: () => {},
+}
+
 type FetchSuggestions = (query: string, signal: AbortSignal) => Promise<Item[]>
 
 describe('useAutocomplete', () => {
@@ -30,7 +36,7 @@ describe('useAutocomplete', () => {
 
   it('starts idle and closed with an empty query', () => {
     const fetchSuggestions = vi.fn()
-    const { result } = renderHook(() => useAutocomplete<Item>({ fetchSuggestions }))
+    const { result } = renderHook(() => useAutocomplete<Item>({ ...baseOptions, fetchSuggestions }))
 
     expect(result.current.state).toEqual({
       query: '',
@@ -38,6 +44,7 @@ describe('useAutocomplete', () => {
       items: [],
       highlightedIndex: null,
       isOpen: false,
+      statusMessage: '',
     })
     expect(fetchSuggestions).not.toHaveBeenCalled()
   })
@@ -45,7 +52,7 @@ describe('useAutocomplete', () => {
   it('does not fetch below minChars and fetches at exactly minChars (2 → 3 boundary)', async () => {
     const deferred = createDeferred<Item[]>()
     const fetchSuggestions = vi.fn(() => deferred.promise)
-    const { result } = renderHook(() => useAutocomplete<Item>({ fetchSuggestions }))
+    const { result } = renderHook(() => useAutocomplete<Item>({ ...baseOptions, fetchSuggestions }))
 
     act(() => result.current.handlers.onInputChange('re'))
     await act(() => vi.advanceTimersByTimeAsync(DEBOUNCE_MS))
@@ -64,7 +71,7 @@ describe('useAutocomplete', () => {
   it('closes the dropdown, resets to idle, and aborts in-flight fetch when the query drops below minChars', async () => {
     const deferred = createDeferred<Item[]>()
     const fetchSuggestions = vi.fn<FetchSuggestions>(() => deferred.promise)
-    const { result } = renderHook(() => useAutocomplete<Item>({ fetchSuggestions }))
+    const { result } = renderHook(() => useAutocomplete<Item>({ ...baseOptions, fetchSuggestions }))
 
     act(() => result.current.handlers.onInputChange('rea'))
     await act(() => vi.advanceTimersByTimeAsync(DEBOUNCE_MS))
@@ -81,7 +88,7 @@ describe('useAutocomplete', () => {
 
   it('collapses rapid keystrokes into exactly one request for the settled query', async () => {
     const fetchSuggestions = vi.fn(() => Promise.resolve<Item[]>([]))
-    const { result } = renderHook(() => useAutocomplete<Item>({ fetchSuggestions }))
+    const { result } = renderHook(() => useAutocomplete<Item>({ ...baseOptions, fetchSuggestions }))
 
     for (const q of ['r', 're', 'rea', 'reac', 'react']) {
       act(() => result.current.handlers.onInputChange(q))
@@ -96,7 +103,7 @@ describe('useAutocomplete', () => {
   it('respects custom minChars and debounceMs', async () => {
     const fetchSuggestions = vi.fn(() => Promise.resolve<Item[]>([]))
     const { result } = renderHook(() =>
-      useAutocomplete<Item>({ fetchSuggestions, minChars: 1, debounceMs: 100 }),
+      useAutocomplete<Item>({ ...baseOptions, fetchSuggestions, minChars: 1, debounceMs: 100 }),
     )
 
     act(() => result.current.handlers.onInputChange('a'))
@@ -112,7 +119,7 @@ describe('useAutocomplete', () => {
     const items: Item[] = [{ id: '1', label: 'react' }]
     const deferred = createDeferred<Item[]>()
     const fetchSuggestions = vi.fn(() => deferred.promise)
-    const { result } = renderHook(() => useAutocomplete<Item>({ fetchSuggestions }))
+    const { result } = renderHook(() => useAutocomplete<Item>({ ...baseOptions, fetchSuggestions }))
 
     act(() => result.current.handlers.onInputChange('rea'))
     await act(() => vi.advanceTimersByTimeAsync(DEBOUNCE_MS))
@@ -134,7 +141,7 @@ describe('useAutocomplete', () => {
       .fn<(query: string, signal: AbortSignal) => Promise<Item[]>>()
       .mockReturnValueOnce(deferredA.promise)
       .mockReturnValueOnce(deferredB.promise)
-    const { result } = renderHook(() => useAutocomplete<Item>({ fetchSuggestions }))
+    const { result } = renderHook(() => useAutocomplete<Item>({ ...baseOptions, fetchSuggestions }))
 
     act(() => result.current.handlers.onInputChange('aaa'))
     await act(() => vi.advanceTimersByTimeAsync(DEBOUNCE_MS))
@@ -159,7 +166,7 @@ describe('useAutocomplete', () => {
   it('aborts the previous fetch immediately on a new qualifying query, before its debounce settles', async () => {
     const deferredA = createDeferred<Item[]>()
     const fetchSuggestions = vi.fn<FetchSuggestions>(() => deferredA.promise)
-    const { result } = renderHook(() => useAutocomplete<Item>({ fetchSuggestions }))
+    const { result } = renderHook(() => useAutocomplete<Item>({ ...baseOptions, fetchSuggestions }))
 
     act(() => result.current.handlers.onInputChange('aaa'))
     await act(() => vi.advanceTimersByTimeAsync(DEBOUNCE_MS))
@@ -180,7 +187,7 @@ describe('useAutocomplete', () => {
   it('aborts the in-flight fetch on unmount and never updates state afterwards', async () => {
     const deferred = createDeferred<Item[]>()
     const fetchSuggestions = vi.fn<FetchSuggestions>(() => deferred.promise)
-    const { result, unmount } = renderHook(() => useAutocomplete<Item>({ fetchSuggestions }))
+    const { result, unmount } = renderHook(() => useAutocomplete<Item>({ ...baseOptions, fetchSuggestions }))
 
     act(() => result.current.handlers.onInputChange('rea'))
     await act(() => vi.advanceTimersByTimeAsync(DEBOUNCE_MS))
@@ -198,7 +205,7 @@ describe('useAutocomplete', () => {
     const boom = new Error('boom')
     const deferred = createDeferred<Item[]>()
     const fetchSuggestions = vi.fn(() => deferred.promise)
-    const { result } = renderHook(() => useAutocomplete<Item>({ fetchSuggestions }))
+    const { result } = renderHook(() => useAutocomplete<Item>({ ...baseOptions, fetchSuggestions }))
 
     act(() => result.current.handlers.onInputChange('rea'))
     await act(() => vi.advanceTimersByTimeAsync(DEBOUNCE_MS))
@@ -219,7 +226,7 @@ describe('useAutocomplete', () => {
       .fn<(query: string, signal: AbortSignal) => Promise<Item[]>>()
       .mockReturnValueOnce(deferredA.promise)
       .mockReturnValueOnce(deferredB.promise)
-    const { result } = renderHook(() => useAutocomplete<Item>({ fetchSuggestions }))
+    const { result } = renderHook(() => useAutocomplete<Item>({ ...baseOptions, fetchSuggestions }))
 
     act(() => result.current.handlers.onInputChange('aaa'))
     await act(() => vi.advanceTimersByTimeAsync(DEBOUNCE_MS))
@@ -238,7 +245,7 @@ describe('useAutocomplete', () => {
   it('goes to empty (distinct from success) when the fetch resolves with zero items', async () => {
     const deferred = createDeferred<Item[]>()
     const fetchSuggestions = vi.fn(() => deferred.promise)
-    const { result } = renderHook(() => useAutocomplete<Item>({ fetchSuggestions }))
+    const { result } = renderHook(() => useAutocomplete<Item>({ ...baseOptions, fetchSuggestions }))
 
     act(() => result.current.handlers.onInputChange('zzz'))
     await act(() => vi.advanceTimersByTimeAsync(DEBOUNCE_MS))
@@ -251,7 +258,7 @@ describe('useAutocomplete', () => {
 
   it('close() closes the dropdown and resets the highlight but keeps the query', async () => {
     const fetchSuggestions = vi.fn(() => Promise.resolve([{ id: '1', label: 'react' }]))
-    const { result } = renderHook(() => useAutocomplete<Item>({ fetchSuggestions }))
+    const { result } = renderHook(() => useAutocomplete<Item>({ ...baseOptions, fetchSuggestions }))
 
     act(() => result.current.handlers.onInputChange('rea'))
     await act(() => vi.advanceTimersByTimeAsync(DEBOUNCE_MS))

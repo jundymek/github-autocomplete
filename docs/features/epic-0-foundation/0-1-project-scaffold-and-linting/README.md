@@ -1,0 +1,121 @@
+# 0.1 — Project scaffold, linting, and boundary rule
+
+## What was built
+
+A greenfield Vite + React 19 + TypeScript-strict project on pnpm, with ESLint 9 flat config +
+Prettier, the `src/lib/**` import-boundary rule (AR-2), the target directory skeleton, secret
+hygiene (`.env.example`), and the fixed `pnpm` scripts contract. `App.tsx` is a minimal
+placeholder — no component/hook/adapter code yet (that starts in Epic 1).
+
+## Versions
+
+- Vite `7.3.6` (react plugin `@vitejs/plugin-react@5.2.0`)
+- React `19.2.7` / react-dom `19.2.7`
+- TypeScript `5.9.3`, `strict: true` (explicit in both `tsconfig.app.json` and
+  `tsconfig.node.json`)
+- ESLint `9.39.4` (flat config, `eslint.config.js`) + `typescript-eslint@8.63.0` +
+  `eslint-plugin-react-hooks@7.1.1` (flat-shaped `configs.flat['recommended-latest']`)
+- Prettier `3.9.4` + `eslint-config-prettier@10.1.8` (composed last so ESLint carries no
+  stylistic rules)
+- Node `22` (pinned via `.nvmrc` and `package.json#engines`), pnpm `>=9`
+
+## Files touched
+
+- `package.json` — NEW — project manifest: name, `engines`, dependencies, the fixed scripts
+  contract (`dev`, `build`, `preview`, `lint`, `typecheck`, `test`, `test:watch`, `test:e2e`,
+  `format`).
+- `pnpm-lock.yaml` — NEW — committed lockfile.
+- `tsconfig.json`, `tsconfig.app.json`, `tsconfig.node.json` — NEW — project references split;
+  `strict: true` added explicitly to both app and node configs.
+- `vite.config.ts` — NEW — Vite + `@vitejs/plugin-react`.
+- `eslint.config.js` — NEW — ESLint 9 flat config: `@eslint/js` recommended, `typescript-eslint`
+  recommended, `eslint-plugin-react-hooks` flat recommended-latest, the `src/lib/**`
+  `no-restricted-imports` boundary override, `eslint-config-prettier` last.
+- `.prettierrc`, `.prettierignore` — NEW — Prettier config; ignores `docs/`, `CLAUDE.md`,
+  `pnpm-lock.yaml`, build output, and local tooling dirs (`_bmad/`, `.claude/`, `.superpowers/`).
+- `.nvmrc` — NEW — pins Node `22`.
+- `.env.example` — NEW — documents `VITE_GITHUB_TOKEN=` with no real value.
+- `index.html`, `src/main.tsx`, `src/App.tsx`, `src/index.css` — NEW — stripped-down app shell;
+  `App.tsx` is a placeholder heading only, all Vite demo cruft (counter, logos, hero image,
+  Vite/React marketing sections) removed.
+- `public/favicon.svg` — NEW — kept from the template; `public/icons.svg` (demo-only sprite)
+  removed.
+- `src/lib/autocomplete/.gitkeep`, `src/features/github-search/.gitkeep`, `src/demo/.gitkeep`,
+  `e2e/.gitkeep` — NEW — empty directory skeleton per architecture §3.2.
+
+## Key decisions
+
+- **Template version drift, pinned back to spec.** `pnpm create vite@latest . --template
+  react-ts` currently scaffolds Vite 8 / TypeScript ~6 / `oxlint` (no ESLint). The spec pins Vite
+  **7.x** and mandates ESLint 9 flat config + Prettier (not oxlint), so the manifest was hand-set
+  to `vite@^7.3.6`, `typescript@~5.9.3`, and oxlint was replaced with `eslint` +
+  `typescript-eslint` + `eslint-plugin-react-hooks` + `eslint-config-prettier`, then
+  `pnpm install` resolved and generated the lockfile against those pins.
+- **`strict: true` added explicitly.** The current template's `tsconfig.app.json` /
+  `tsconfig.node.json` no longer include an explicit `"strict": true` line (though most strict
+  sub-flags are implied elsewhere); AC1 requires it stated explicitly, so it was added to both
+  files under a `/* Strict type-checking */` block.
+- **`eslint-plugin-react-hooks@7` flat export.** `configs['recommended-latest']` in this plugin
+  version is still legacy-shaped (`plugins: ["react-hooks"]` as an array), which flat config
+  rejects. The plugin also exports `configs.flat['recommended-latest']`, which is properly
+  flat-shaped — that is what `eslint.config.js` composes.
+- **Formatter scope.** `pnpm format` (Prettier `--write .`) was run once repo-wide; it initially
+  reformatted `CLAUDE.md` and an unrelated `.superpowers/` file, which are out of scope for this
+  story (CLAUDE.md must not be overwritten). Both were excluded via `.prettierignore` and the
+  spurious CLAUDE.md reformat was reverted with `git checkout -- CLAUDE.md` before any commit.
+- **`.gitignore` already covered `.env.local`, `_bmad/`, `.claude/`** from repo setup — no edit
+  was needed for AC6.
+
+## How it works — the lib-boundary rule (AR-2)
+
+`eslint.config.js` adds an override scoped to `files: ['src/lib/**/*.{ts,tsx}']` with a
+`no-restricted-imports` rule forbidding import specifiers matching `**/features/*`,
+`**/features/**`, `**/App`, `**/main`, `**/demo/*`, `**/demo/**`. This mechanically enforces the
+one-way import direction `lib/` ← `features/github-search/` ← `demo`/`App` (never the reverse).
+
+**Proof the rule fires** — a temporary file `src/lib/autocomplete/_boundary-proof.ts` was added
+with:
+
+```ts
+import { nothing } from '../../features/github-search/nothing'
+export { nothing }
+```
+
+Running `pnpm lint` produced:
+
+```
+/Users/.../src/lib/autocomplete/_boundary-proof.ts
+  2:1  error  '../../features/github-search/nothing' import is restricted from being used by a pattern. src/lib/autocomplete/ is the reusable deliverable and must never import from src/features/** or app/demo code (AR-2). The import direction is one-way: lib/ <- features/github-search/ <- demo/App  no-restricted-imports
+
+✖ 1 problem (1 error, 0 warnings)
+```
+
+The file was then deleted and `src/lib/autocomplete/.gitkeep` restored; `pnpm lint` is clean
+again on the committed tree.
+
+## Scripts contract
+
+| Script | Command | Status |
+|---|---|---|
+| `dev` | `vite` | wired |
+| `build` | `tsc -b && vite build` | wired |
+| `preview` | `vite preview` | wired |
+| `lint` | `eslint .` | wired |
+| `typecheck` | `tsc --noEmit` | wired |
+| `format` | `prettier --write .` | wired |
+| `test` | `vitest run` | name fixed now, tool installed in Story 0.2 |
+| `test:watch` | `vitest` | name fixed now, tool installed in Story 0.2 |
+| `test:e2e` | `playwright test` | name fixed now, tool installed in Story 0.2 |
+
+`test`/`test:watch`/`test:e2e` will fail today (`vitest`/`playwright` are not installed) — this is
+expected and explicitly in-scope per the story (Story 0.2 wires them).
+
+## Tests
+
+No unit tests in this story (pure tooling/config). Verification is:
+
+```
+pnpm lint && pnpm typecheck && pnpm build
+```
+
+All three pass — see command output above and in the story's Dev Agent Record.

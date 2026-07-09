@@ -1,6 +1,10 @@
+---
+baseline_commit: eaf6eef
+---
+
 # Story 1.1: `useAutocomplete<T>` hook — state machine, debounce, threshold, cancellation
 
-Status: Approved
+Status: Review
 
 ## Story
 
@@ -22,27 +26,27 @@ so that any UI can get threshold, debounce, cancellation, and unambiguous states
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Types (`src/lib/autocomplete/types.ts`) (AC: 1, 5, 6, 7, 8)
-  - [ ] Define `AutocompleteStatus = 'idle' | 'loading' | 'success' | 'empty' | 'error'`.
-  - [ ] Define `AutocompleteState<T> = { query: string; status: AutocompleteStatus; items: T[]; highlightedIndex: number | null; isOpen: boolean; error?: { message: string; cause?: unknown } }`.
-  - [ ] Define `UseAutocompleteOptions<T> = { fetchSuggestions: (query: string, signal: AbortSignal) => Promise<T[]>; getItemKey?: (item: T) => string; minChars?: number; debounceMs?: number }`. TSDoc every field. Prefer `type` aliases (§3.1).
-  - [ ] Define the `handlers` object type with at least `onInputChange(value: string): void` and `close(): void` for this story; leave keyboard/ARIA handler fields declared but documented as "implemented in 1.2" (so 1.2 extends without breaking the type contract). Decision: declare the full §3.4 handler surface as the type now, implement only input/close here — record this in Dev Agent Record.
-- [ ] Task 2 — **Write tests first** (`src/lib/autocomplete/useAutocomplete.test.tsx`) (AC: 9) — TEST-FIRST
-  - [ ] Set up `vi.useFakeTimers()` in `beforeEach` and restore in `afterEach`; render the hook via RTL `renderHook` (jsdom). Use a controllable stub `fetchSuggestions` (a `vi.fn()` returning a manually-resolvable promise / deferred) — **not** MSW (this story has no HTTP; §3.6 unit level). Advance debounce with `vi.advanceTimersByTimeAsync`.
-  - [ ] **Threshold boundary 2 → 3:** type `"re"` → assert no call, `status: 'idle'`, `isOpen: false`; extend to `"rea"` and advance 300ms → assert exactly one call with `"rea"`.
-  - [ ] **Debounce collapsing:** type `"r"`,`"re"`,`"rea"`,`"reac"`,`"react"` rapidly (each < 300ms apart), advance 300ms → assert `fetchSuggestions` called exactly once, with `"react"`.
-  - [ ] **Stale response ignored via abort:** start query A (resolve deferred later), change to query B; assert A's `AbortController.signal.aborted === true`; resolve A late → assert state reflects B, never A; resolve B → assert B rendered.
-  - [ ] **Unmount cleanup:** start a fetch, `unmount()` before it resolves → assert the in-flight signal is aborted and resolving the promise afterward triggers no state update / no act warning.
-  - [ ] **Error path:** stub rejects with `new Error('boom')` → assert `status: 'error'`, `error.message` present, `error.cause` is the thrown Error; then assert an `AbortError` rejection does **not** produce `status: 'error'` (stays/settles non-error).
-  - [ ] **Empty path:** stub resolves `[]` → assert `status: 'empty'` (distinct from `success`), `items: []`, `isOpen: true`.
-- [ ] Task 3 — Hook implementation (`src/lib/autocomplete/useAutocomplete.ts`) (AC: 1–8)
-  - [ ] Implement debounce (timer ref, cleared on each `onInputChange` and on unmount), threshold gate, `AbortController` per fetch stored in a ref, abort-on-change/threshold-drop/unmount.
-  - [ ] Map resolution → `success`/`empty` by items length; map rejection → `error` unless aborted (check `signal.aborted` or `err?.name === 'AbortError'`). Store `error.cause` = caught value (AC-6).
-  - [ ] Guard against post-unmount / stale `setState`: only commit results whose owning controller is still the current one (compare against the ref) — the abort check plus a mounted ref both apply.
-  - [ ] Reset `highlightedIndex` to `null` on new query and on `close()`; keyboard reducers deferred to 1.2 (add a `// 1.2:` marker where they'll attach).
-  - [ ] TSDoc on the exported hook and types (NFR-4).
-- [ ] Task 4 — Verify (AC: all)
-  - [ ] `pnpm lint && pnpm typecheck && pnpm test` all green (repo uses **pnpm**, Node 22 — see Dev Notes). The lib-boundary ESLint rule (AR-2) must not flag this file (zero `features/`/app imports).
+- [x] Task 1 — Types (`src/lib/autocomplete/types.ts`) (AC: 1, 5, 6, 7, 8)
+  - [x] Define `AutocompleteStatus = 'idle' | 'loading' | 'success' | 'empty' | 'error'`.
+  - [x] Define `AutocompleteState<T> = { query: string; status: AutocompleteStatus; items: T[]; highlightedIndex: number | null; isOpen: boolean; error?: { message: string; cause?: unknown } }`.
+  - [x] Define `UseAutocompleteOptions<T> = { fetchSuggestions: (query: string, signal: AbortSignal) => Promise<T[]>; getItemKey?: (item: T) => string; minChars?: number; debounceMs?: number }`. TSDoc every field. Prefer `type` aliases (§3.1).
+  - [x] Define the `handlers` object type with at least `onInputChange(value: string): void` and `close(): void` for this story; leave keyboard/ARIA handler fields declared but documented as "implemented in 1.2" (so 1.2 extends without breaking the type contract). Decision: declare the full §3.4 handler surface as the type now, implement only input/close here — record this in Dev Agent Record.
+- [x] Task 2 — **Write tests first** (`src/lib/autocomplete/useAutocomplete.test.tsx`) (AC: 9) — TEST-FIRST
+  - [x] Set up `vi.useFakeTimers()` in `beforeEach` and restore in `afterEach`; render the hook via RTL `renderHook` (jsdom). Use a controllable stub `fetchSuggestions` (a `vi.fn()` returning a manually-resolvable promise / deferred) — **not** MSW (this story has no HTTP; §3.6 unit level). Advance debounce with `vi.advanceTimersByTimeAsync`.
+  - [x] **Threshold boundary 2 → 3:** type `"re"` → assert no call, `status: 'idle'`, `isOpen: false`; extend to `"rea"` and advance 300ms → assert exactly one call with `"rea"`.
+  - [x] **Debounce collapsing:** type `"r"`,`"re"`,`"rea"`,`"reac"`,`"react"` rapidly (each < 300ms apart), advance 300ms → assert `fetchSuggestions` called exactly once, with `"react"`.
+  - [x] **Stale response ignored via abort:** start query A (resolve deferred later), change to query B; assert A's `AbortController.signal.aborted === true`; resolve A late → assert state reflects B, never A; resolve B → assert B rendered.
+  - [x] **Unmount cleanup:** start a fetch, `unmount()` before it resolves → assert the in-flight signal is aborted and resolving the promise afterward triggers no state update / no act warning.
+  - [x] **Error path:** stub rejects with `new Error('boom')` → assert `status: 'error'`, `error.message` present, `error.cause` is the thrown Error; then assert an `AbortError` rejection does **not** produce `status: 'error'` (stays/settles non-error).
+  - [x] **Empty path:** stub resolves `[]` → assert `status: 'empty'` (distinct from `success`), `items: []`, `isOpen: true`.
+- [x] Task 3 — Hook implementation (`src/lib/autocomplete/useAutocomplete.ts`) (AC: 1–8)
+  - [x] Implement debounce (timer ref, cleared on each `onInputChange` and on unmount), threshold gate, `AbortController` per fetch stored in a ref, abort-on-change/threshold-drop/unmount.
+  - [x] Map resolution → `success`/`empty` by items length; map rejection → `error` unless aborted (check `signal.aborted` or `err?.name === 'AbortError'`). Store `error.cause` = caught value (AC-6).
+  - [x] Guard against post-unmount / stale `setState`: only commit results whose owning controller is still the current one (compare against the ref) — the abort check plus a mounted ref both apply.
+  - [x] Reset `highlightedIndex` to `null` on new query and on `close()`; keyboard reducers deferred to 1.2 (add a `// 1.2:` marker where they'll attach).
+  - [x] TSDoc on the exported hook and types (NFR-4).
+- [x] Task 4 — Verify (AC: all)
+  - [x] `pnpm lint && pnpm typecheck && pnpm test` all green (repo uses **pnpm**, Node 22 — see Dev Notes). The lib-boundary ESLint rule (AR-2) must not flag this file (zero `features/`/app imports).
 
 ## Documentation deliverables
 
@@ -95,14 +99,54 @@ Part of Definition of Done (see CLAUDE.md). Create the task documentation folder
 
 ### Agent Model Used
 
+Claude Fable 5 (claude-fable-5)
+
+### Implementation Plan
+
+1. Branch `story/1-1-useautocomplete-hook` off `master` (0.1 + 0.2 merged; 0.3 not a dependency).
+2. Task 1: `types.ts` — status union, state, error, options, handlers, result types (type aliases, TSDoc).
+3. Task 2 (test-first): 12 unit tests with `vi.useFakeTimers()` + deferred `vi.fn()` stub; confirmed RED (module absent).
+4. Task 3: hook with single `useState` object, refs for debounce timer / current `AbortController` / mounted flag / latest `fetchSuggestions`; commit guard = owning controller still current AND mounted AND not aborted.
+5. Task 4: `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e` green; docs folder; review gate; PR.
+
 ### Debug Log References
+
+- RED phase: `pnpm test` failed with unresolved `./useAutocomplete` import (expected).
+- `react-hooks/refs` lint error on writing `fetchSuggestionsRef.current` during render → moved the sync into a `useEffect`.
+- TS strict: untyped `vi.fn(() => deferred.promise)` inferred `[]` args, breaking `mock.calls[0][1]` → typed the stubs with a shared `FetchSuggestions` type.
 
 ### Completion Notes List
 
+- **Decision (Task 1):** declared the full §3.4 handler surface (`onInputChange`, `close`, `onKeyDown`, `onItemClick`, `onItemHover`) in `AutocompleteHandlers` now; only `onInputChange`/`close` carry behavior, the rest are documented no-ops so 1.2 implements them without a breaking type change. ARIA prop getters are NOT declared yet — 1.2 adds them additively (non-breaking), since their exact prop shapes belong to the getter story.
+- Generic error message is `'Something went wrong.'`; the caught value is preserved verbatim as `error.cause` (AC-6). The hook has zero `features/`/app imports (AR-2) — boundary lint clean.
+- `AbortError` detection covers both `err.name === 'AbortError'` and `signal.aborted` (AC-4).
+- `highlightedIndex` initialized `null`, reset on every input change and on `close()`; `// 1.2:` marker placed where keyboard reducers attach.
+- Verification: `pnpm lint`, `pnpm typecheck`, `pnpm test` (15 tests, 4 files), `pnpm test:e2e` (1 smoke) — all green.
+- MANUAL_TESTING.md intentionally omitted (headless logic, per spec); PERFORMANCE.md shipped as required.
+
+### Pre-PR review gate (mandatory)
+
+- **Security review (security-review skill):** no findings. Headless in-memory state machine — no DOM sinks, no network I/O, no secrets, no new dependencies; `error.cause` is stored but never logged/rendered.
+- **Codex-rescue second-pass review:** 4 findings, triaged:
+  - **High — abort not immediate on new qualifying query (`useAutocomplete.ts` `onInputChange`): CONFIRMED & FIXED.** Previously the old controller was aborted only when the debounced fetch started, so request A could resolve during B's debounce window and commit stale items. Fix: `abortInFlight()` now runs immediately in the qualifying branch of `onInputChange`. New regression test: "aborts the previous fetch immediately on a new qualifying query, before its debounce settles".
+  - **Medium — missing immediate-abort test: CONFIRMED & FIXED** (test above; suite is now 16 tests).
+  - **Medium — `AutocompleteState<T>` should be a per-status discriminated union: FALSE POSITIVE (spec-compliant as-is).** AC-7 mandates the state shape *exactly* as a single object with optional `error?`; AC-5's "discriminated union" refers to the `status` union itself. Tightening `error` narrowing can be revisited in 1.3 if the component needs it.
+  - **Low — declare ARIA prop getters in `AutocompleteHandlers` now: DECLINED (recorded decision).** §3.4 leaves getter shapes unspecified (`/* ARIA prop getters */`); guessing their signatures now risks a real breaking change in 1.2, whereas adding new fields to the returned object later is additive and non-breaking.
+- **Re-verification after fixes:** `pnpm lint && pnpm typecheck && pnpm test` (16 tests) `&& pnpm test:e2e` (1 smoke) — all green.
+
 ### File List
+
+- `src/lib/autocomplete/types.ts` — NEW
+- `src/lib/autocomplete/useAutocomplete.ts` — NEW
+- `src/lib/autocomplete/useAutocomplete.test.tsx` — NEW
+- `src/lib/autocomplete/.gitkeep` — DELETED
+- `docs/features/epic-1-core-autocomplete/1-1-useautocomplete-hook/README.md` — NEW
+- `docs/features/epic-1-core-autocomplete/1-1-useautocomplete-hook/PERFORMANCE.md` — NEW
+- `docs/implementation-artifacts/1-1-useautocomplete-hook.md` — UPDATE (frontmatter, checkboxes, Dev Agent Record, status)
 
 ## Change Log
 
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
 | 2026-07-09 | 0.1 | Initial draft (headless create-story, Approved) | bmad-create-story |
+| 2026-07-09 | 1.0 | Implemented hook + types + 12 unit tests, docs folder; all verification green | bmad-dev-story (Claude Fable 5) |

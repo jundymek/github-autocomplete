@@ -127,6 +127,7 @@ None — implementation went green on first pass after the failing-test run (17/
   2. *AR-4 signature drift — optional `token` param on `fetchSuggestions` — VALID (design).* A 3-arg function with optional `token` is assignable to the AR-4 shape, but Dev Notes require the token binding "at construction time". **Fixed:** replaced with `createFetchSuggestions(token?)` factory returning the exact AR-4 signature, plus an unauthenticated default `fetchSuggestions` export; tests updated (factory token binding + default-instance no-auth test).
   3. *Missing mixed-type id collision test — VALID.* **Fixed** together with finding 1.
 - Re-verified after fixes: `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e` all green.
+- **CI:** green on PR #8 — https://github.com/jundymek/github-autocomplete/actions/runs/29037275004
 
 ### File List
 

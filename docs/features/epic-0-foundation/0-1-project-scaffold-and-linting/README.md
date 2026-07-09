@@ -2,22 +2,37 @@
 
 ## What was built
 
-A greenfield Vite + React 19 + TypeScript-strict project on pnpm, with ESLint 9 flat config +
+A greenfield Vite + React 19 + TypeScript-strict project on pnpm, with ESLint flat config +
 Prettier, the `src/lib/**` import-boundary rule (AR-2), the target directory skeleton, secret
 hygiene (`.env.example`), and the fixed `pnpm` scripts contract. `App.tsx` is a minimal
 placeholder — no component/hook/adapter code yet (that starts in Epic 1).
 
 ## Versions
 
-- Vite `7.3.6` (react plugin `@vitejs/plugin-react@5.2.0`)
+Per the AR-1 latest-stable version policy (owner decision, 2026-07-09), every dependency is at
+its latest stable release at implementation time, with one recorded holdback (see below):
+
+- Vite `8.1.4` (react plugin `@vitejs/plugin-react@6.0.3`)
 - React `19.2.7` / react-dom `19.2.7`
-- TypeScript `5.9.3`, `strict: true` (explicit in both `tsconfig.app.json` and
-  `tsconfig.node.json`)
-- ESLint `9.39.4` (flat config, `eslint.config.js`) + `typescript-eslint@8.63.0` +
-  `eslint-plugin-react-hooks@7.1.1` (flat-shaped `configs.flat['recommended-latest']`)
+- TypeScript `6.0.3` — **HELD BACK** from latest (`7.0.2`); see holdback note below
+- `strict: true` explicit in both `tsconfig.app.json` and `tsconfig.node.json`
+- ESLint `10.6.0` (flat config, `eslint.config.js`) + `typescript-eslint@8.63.0` +
+  `eslint-plugin-react-hooks@7.1.1` (flat-shaped `configs.flat['recommended-latest']`) +
+  `@eslint/js@10.0.1` + `globals@17.7.0`
 - Prettier `3.9.4` + `eslint-config-prettier@10.1.8` (composed last so ESLint carries no
   stylistic rules)
+- `@types/node@26.1.1`, `@types/react@19.2.17`, `@types/react-dom@19.2.3`
 - Node `22` (pinned via `.nvmrc` and `package.json#engines`), pnpm `>=9`
+
+### Version holdback (per AR-1)
+
+- **TypeScript held at `~6.0.3` instead of latest `7.0.2`.** `typescript-eslint@8.63.0` (its own
+  latest stable) declares peer `typescript >=4.8.4 <6.1.0` and hard-crashes at lint time under
+  TS 7 (`TypeError: Cannot read properties of undefined (reading 'Cjs')` inside
+  `@typescript-eslint/typescript-estree`) — verified locally: with TS `7.0.2`, `pnpm typecheck`
+  and `pnpm build` pass but `pnpm lint` crashes. TypeScript `6.0.3` is the newest release inside
+  the supported peer range, so it is the smallest possible holdback that keeps the toolchain
+  green. Revisit when typescript-eslint ships TS 6.1+/7 support.
 
 ## Files touched
 
@@ -45,12 +60,12 @@ placeholder — no component/hook/adapter code yet (that starts in Epic 1).
 
 ## Key decisions
 
-- **Template version drift, pinned back to spec.** `pnpm create vite@latest . --template
-  react-ts` currently scaffolds Vite 8 / TypeScript ~6 / `oxlint` (no ESLint). The spec pins Vite
-  **7.x** and mandates ESLint 9 flat config + Prettier (not oxlint), so the manifest was hand-set
-  to `vite@^7.3.6`, `typescript@~5.9.3`, and oxlint was replaced with `eslint` +
-  `typescript-eslint` + `eslint-plugin-react-hooks` + `eslint-config-prettier`, then
-  `pnpm install` resolved and generated the lockfile against those pins.
+- **Version policy.** The story was first implemented against the original AR-1 (Vite 7.x pin,
+  TypeScript 5.9), then re-aligned to the updated AR-1 latest-stable policy (owner decision,
+  2026-07-09, commit b9b65dc): all dependencies bumped to latest stable via `pnpm up --latest`,
+  with the single TypeScript holdback documented above. The template's `oxlint` was replaced with
+  ESLint flat config + `typescript-eslint` + `eslint-plugin-react-hooks` + Prettier +
+  `eslint-config-prettier` per AR-13 (the spec mandates ESLint + Prettier, not oxlint).
 - **`strict: true` added explicitly.** The current template's `tsconfig.app.json` /
   `tsconfig.node.json` no longer include an explicit `"strict": true` line (though most strict
   sub-flags are implied elsewhere); AC1 requires it stated explicitly, so it was added to both

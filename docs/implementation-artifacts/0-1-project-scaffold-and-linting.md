@@ -295,6 +295,20 @@ claude-sonnet-5
 - **Security self-audit**: no secrets in tracked files (grepped for token/key/password patterns —
   none found); no unpinned `curl | bash`/`sh` patterns; `.env.local` confirmed gitignored via
   `git check-ignore -v`; dependency count sane (2 runtime, 13 dev, no forbidden packages).
+- **Latest-stable version bump (post-review, per updated AR-1 — owner decision 2026-07-09, commit
+  b9b65dc)**: merged master into the branch and bumped all dependencies to latest stable via
+  `pnpm up --latest`: Vite `8.1.4`, `@vitejs/plugin-react@6.0.3`, ESLint `10.6.0`,
+  `@eslint/js@10.0.1`, `globals@17.7.0`, `@types/node@26.1.1`; React/react-dom `19.2.7`,
+  typescript-eslint `8.63.0`, eslint-plugin-react-hooks `7.1.1`, Prettier `3.9.4`,
+  eslint-config-prettier `10.1.8` already latest.
+  **Holdback (per AR-1): TypeScript `~6.0.3` instead of latest `7.0.2`** —
+  `typescript-eslint@8.63.0` (its own latest stable) has peer `typescript >=4.8.4 <6.1.0` and
+  hard-crashes at lint time under TS 7 (`TypeError: Cannot read properties of undefined (reading
+  'Cjs')` in `@typescript-eslint/typescript-estree`); verified: on TS 7.0.2 `pnpm typecheck` and
+  `pnpm build` pass but `pnpm lint` crashes. TS `6.0.3` is the newest release within the supported
+  peer range — the smallest holdback keeping the toolchain green. Re-verified after the bump:
+  `pnpm lint`, `pnpm typecheck`, `pnpm build` all green; boundary rule re-proven with an
+  `eslint --stdin` probe (`../../App.tsx` import from `src/lib/autocomplete/` → error, exit 1).
 
 ### File List
 
@@ -328,3 +342,4 @@ claude-sonnet-5
 |---|---|---|---|
 | 2026-07-09 | 0.1 | Initial draft — story approved, ready for dev | Scrum Master (bmad-create-story) |
 | 2026-07-09 | 0.1 | Implemented: Vite 7 + React 19 + TS strict scaffold, ESLint 9 flat + Prettier, lib-boundary rule (Codex-hardened), directory skeleton, env/secret hygiene, scripts contract, docs | claude-sonnet-5 |
+| 2026-07-09 | 0.2 | Bumped toolchain to latest stable per updated AR-1 (Vite 8.1.4, ESLint 10.6.0, plugin-react 6.0.3, @types/node 26); TypeScript held at 6.0.3 (typescript-eslint 8.63.0 incompatible with TS 7) — holdback recorded per AR-1 | claude-sonnet-5 |

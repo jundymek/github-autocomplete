@@ -46,6 +46,27 @@ Never leak in the wrong direction: `lib/` must not import from `features/` or ap
   level, not fetch stubs). E2e stays thin: new-tab opening, focus management, axe.
 - `_bmad/` and `.claude/` are local tooling and are gitignored — do not commit them.
 
+## Story pipeline (every story, in order)
+
+Each story is implemented by a fresh agent with a clean context. The agent:
+
+1. Reads its story spec (`docs/implementation-artifacts/<id>-<slug>.md`), CLAUDE.md,
+   `docs/planning-artifacts/architecture.md`, and `docs/design/` where relevant. Nothing else is
+   assumed — the spec is the single source of requirements.
+2. Creates a short implementation plan (recorded in the spec's Dev Agent Record), then codes on
+   branch `story/<id>-<slug>`, test-first where there is logic.
+3. Documents the work in `docs/features/<epic-folder>/<id>-<slug>/`: `README.md` (always),
+   `MANUAL_TESTING.md` (if the story ships human-verifiable browser behavior), `PERFORMANCE.md`
+   (only if the story has a real performance dimension — e.g. debounce/abort behavior, render
+   volume; skip otherwise).
+4. Runs the full verification locally: `pnpm lint && pnpm typecheck && pnpm test` (+ `pnpm
+   test:e2e` when e2e exists) — all green before review.
+5. Gets an independent **Codex review** of the story diff and a **security check** (secrets,
+   injection, unsafe URL/target handling, dependency risk). Findings are fixed and re-verified.
+6. Only when everything is green: opens a **pull request** with a precise description (what/why,
+   AC checklist, test evidence, review outcomes). PRs are squash-merged into `master`.
+7. Updates the spec's Dev Agent Record (status, completion notes, file list) before the PR.
+
 ## Documentation deliverables (MANDATORY for every story)
 
 Every implemented story MUST ship a documentation folder. This is part of Definition of Done — a

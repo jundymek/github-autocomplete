@@ -1,6 +1,10 @@
+---
+baseline_commit: 1b9e1228d30819b9a98c88359595cca4dfa6b167
+---
+
 # Story 1.3: `Autocomplete<T>` presentational component with CSS Modules and portal dropdown
 
-Status: Approved
+Status: Review
 
 ## Story
 
@@ -27,28 +31,28 @@ so that I can drop it into any host with any data source and get correct renderi
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — CSS Modules (`src/lib/autocomplete/Autocomplete.module.css`) (AC: 2, 3, 4, 9)
-  - [ ] Author scoped classes mirroring the design's structure (input, trailing slot + pulse dots, popup, list, item, avatar/repoicon glyph, name/path/meta, kind column, footer, state blocks: default/error/warn, retry button, skeleton rows). Class names camelCase (§3.1).
-  - [ ] Every themeable property reads `var(--ac-*, <fallback>)` with the **exact** fallback hex/values from AC-3. Copy them verbatim from `docs/design/design-tokens.md` / `component-states.html` `:root`.
-  - [ ] Add the `@keyframes ac-pulse` and `@keyframes ac-in`, plus `@media (prefers-reduced-motion: reduce)` disabling both (AC-9). No global selectors, no `:root` token *definitions* (only `var()` *consumption* with fallbacks) — tokens are set by hosts on ancestors (NFR-5).
-  - [ ] Focus ring: the input `:focus` / focus-visible uses the double `box-shadow` accent ring (2px surface offset + 2px accent), token-controlled (AC-7, design state 09).
-- [ ] Task 2 — **Write tests first** (`src/lib/autocomplete/Autocomplete.test.tsx`) (AC: 11) — TEST-FIRST
-  - [ ] Drive the component with a **stubbed async `fetchSuggestions`** (resolves fixtures / rejects / resolves `[]` / never-resolves-for-loading) + fake timers for debounce. **No MSW here** — see Dev Notes (§3.6: MSW-over-HTTP is Epic 2; this story's data source is injected/stubbed).
-  - [ ] **States:** below-threshold hint (type 2 chars → hint + no fetch); loading (in-flight → pulse + skeletons + live region "Searching"); results (fixtures → N options + footer count); empty (`[]` → "No matches for '{query}'" + "0 results"); error (reject → danger title + retry button; clicking retry re-fires); rate-limit-style (reject with an overridden error message → the overridden text renders — proving the component shows adapter-supplied text without knowing "rate limit").
-  - [ ] **Portal:** assert the open dropdown is a child of `document.body` (not the input's wrapper) and that ARIA `aria-controls`/`aria-activedescendant` still resolve across the portal.
-  - [ ] **Keyboard end-to-end:** ArrowDown highlights option 0 (`aria-selected`, `aria-activedescendant`); Enter → `onSelect(fixtures[0])`; Escape → dropdown closed, input still focused, query retained.
-  - [ ] **ARIA:** input combobox attrs + a real accessible name (label prop); listbox/option roles + ids from `getItemKey` + `aria-selected`.
-  - [ ] **Token fallback / theming:** assert the module class is applied and that setting `--ac-color-accent` on an ancestor is reflected (e.g. via computed style or a snapshot of the inline var), proving theming without selector piercing.
-  - [ ] **Data-source agnosticism (AC-10):** render with a static country-list `fetchSuggestions` + custom `renderItem`/`getItemKey`; assert it works unchanged.
-- [ ] Task 3 — Component (`src/lib/autocomplete/Autocomplete.tsx`) (AC: 1, 4–10)
-  - [ ] Consume `useAutocomplete<T>` (1.1/1.2); spread `getInputProps()`/`getListboxProps()`/`getItemProps()`. **No key logic in the component** — everything routes through the hook.
-  - [ ] Render input + trailing slot (pulse dots when loading) + the visually-hidden live region (in-flow, not portalled) + the portalled popup.
-  - [ ] Implement the portal + positioning: `createPortal` to `document.body`; a positioning hook/effect measuring `getBoundingClientRect()` on open and on `scroll` (capture: true) + `resize`, applying `position: fixed` `top/left/width` from the rect; `max-height` + internal scroll; `scrollIntoView({ block: 'nearest' })` on the highlighted option when `highlightedIndex` changes. (AR-7)
-  - [ ] Render all 9 states off the hook state; use `renderItem(item, { highlighted })` for rows; wire the retry button to re-fire the last query; apply message-override props (generic defaults) for loading/empty/error texts.
-  - [ ] Render the footer via the customizable footer prop/overrides with generic defaults (AC-8).
-  - [ ] Supply the real `<label>`/`aria-label` from the `label` prop (default an accessible name).
-- [ ] Task 4 — Verify (AC: all)
-  - [ ] `pnpm lint && pnpm typecheck && pnpm test` green. Lib-boundary rule (AR-2) clean; **zero** GitHub strings/types in `src/lib/autocomplete/` (grep for "github"/"rate" — none). Manual browser pass per MANUAL_TESTING.md.
+- [x] Task 1 — CSS Modules (`src/lib/autocomplete/Autocomplete.module.css`) (AC: 2, 3, 4, 9)
+  - [x] Author scoped classes mirroring the design's structure (input, trailing slot + pulse dots, popup, list, item, avatar/repoicon glyph, name/path/meta, kind column, footer, state blocks: default/error/warn, retry button, skeleton rows). Class names camelCase (§3.1).
+  - [x] Every themeable property reads `var(--ac-*, <fallback>)` with the **exact** fallback hex/values from AC-3. Copy them verbatim from `docs/design/design-tokens.md` / `component-states.html` `:root`.
+  - [x] Add the `@keyframes ac-pulse` and `@keyframes ac-in`, plus `@media (prefers-reduced-motion: reduce)` disabling both (AC-9). No global selectors, no `:root` token *definitions* (only `var()` *consumption* with fallbacks) — tokens are set by hosts on ancestors (NFR-5).
+  - [x] Focus ring: the input `:focus` / focus-visible uses the double `box-shadow` accent ring (2px surface offset + 2px accent), token-controlled (AC-7, design state 09).
+- [x] Task 2 — **Write tests first** (`src/lib/autocomplete/Autocomplete.test.tsx`) (AC: 11) — TEST-FIRST
+  - [x] Drive the component with a **stubbed async `fetchSuggestions`** (resolves fixtures / rejects / resolves `[]` / never-resolves-for-loading) + fake timers for debounce. **No MSW here** — see Dev Notes (§3.6: MSW-over-HTTP is Epic 2; this story's data source is injected/stubbed).
+  - [x] **States:** below-threshold hint (type 2 chars → hint + no fetch); loading (in-flight → pulse + skeletons + live region "Searching"); results (fixtures → N options + footer count); empty (`[]` → "No matches for '{query}'" + "0 results"); error (reject → danger title + retry button; clicking retry re-fires); rate-limit-style (reject with an overridden error message → the overridden text renders — proving the component shows adapter-supplied text without knowing "rate limit").
+  - [x] **Portal:** assert the open dropdown is a child of `document.body` (not the input's wrapper) and that ARIA `aria-controls`/`aria-activedescendant` still resolve across the portal.
+  - [x] **Keyboard end-to-end:** ArrowDown highlights option 0 (`aria-selected`, `aria-activedescendant`); Enter → `onSelect(fixtures[0])`; Escape → dropdown closed, input still focused, query retained.
+  - [x] **ARIA:** input combobox attrs + a real accessible name (label prop); listbox/option roles + ids from `getItemKey` + `aria-selected`.
+  - [x] **Token fallback / theming:** assert the module class is applied and that setting `--ac-color-accent` on an ancestor is reflected (e.g. via computed style or a snapshot of the inline var), proving theming without selector piercing.
+  - [x] **Data-source agnosticism (AC-10):** render with a static country-list `fetchSuggestions` + custom `renderItem`/`getItemKey`; assert it works unchanged.
+- [x] Task 3 — Component (`src/lib/autocomplete/Autocomplete.tsx`) (AC: 1, 4–10)
+  - [x] Consume `useAutocomplete<T>` (1.1/1.2); spread `getInputProps()`/`getListboxProps()`/`getItemProps()`. **No key logic in the component** — everything routes through the hook.
+  - [x] Render input + trailing slot (pulse dots when loading) + the visually-hidden live region (in-flow, not portalled) + the portalled popup.
+  - [x] Implement the portal + positioning: `createPortal` to `document.body`; a positioning hook/effect measuring `getBoundingClientRect()` on open and on `scroll` (capture: true) + `resize`, applying `position: fixed` `top/left/width` from the rect; `max-height` + internal scroll; `scrollIntoView({ block: 'nearest' })` on the highlighted option when `highlightedIndex` changes. (AR-7)
+  - [x] Render all 9 states off the hook state; use `renderItem(item, { highlighted })` for rows; wire the retry button to re-fire the last query; apply message-override props (generic defaults) for loading/empty/error texts.
+  - [x] Render the footer via the customizable footer prop/overrides with generic defaults (AC-8).
+  - [x] Supply the real `<label>`/`aria-label` from the `label` prop (default an accessible name).
+- [x] Task 4 — Verify (AC: all)
+  - [x] `pnpm lint && pnpm typecheck && pnpm test` green. Lib-boundary rule (AR-2) clean; **zero** GitHub strings/types in `src/lib/autocomplete/` (grep for "github"/"rate" — none). Manual browser pass per MANUAL_TESTING.md.
 
 ## Documentation deliverables
 
@@ -117,14 +121,101 @@ Part of Definition of Done (see CLAUDE.md). Create the task documentation folder
 
 ### Agent Model Used
 
+Claude Fable 5 (claude-fable-5) via Claude Code
+
+### Implementation Plan
+
+1. Test-first: author `Autocomplete.test.tsx` (41 RTL tests initially, 43 after the review gate, stubbed `fetchSuggestions`, fake
+   timers, no MSW) → confirmed RED.
+2. `Autocomplete.module.css` mirroring `component-states.html` with every themeable property as
+   `var(--ac-*, <AC-3 fallback>)`, `ac-pulse`/`ac-in` keyframes, reduced-motion gate.
+3. Extend `types.ts` with the AR-4 props surface (`AutocompleteProps<T>` + messages/footer/tone
+   types); implement `Autocomplete.tsx` (portal + positioning hook, token bridging, 9 states,
+   live region, retry).
+4. Full verification + scripted real-browser pass (Chromium/Playwright) + docs folder.
+
 ### Debug Log References
+
+- Scripted browser pass (temporary App.tsx harness, reverted): verified portal parent =
+  `document.body`, popup width-matched to input, positioned at `rect.bottom + 6`, Escape keeps
+  focus + query, `--ac-*` bridging onto the portal popup. Caught one real defect: missing
+  self-contained `box-sizing: border-box` (popup rendered wider than the input in hosts without a
+  border-box reset) — fixed in the module CSS and re-verified.
 
 ### Completion Notes List
 
+- All 11 ACs implemented; 43 new tests, 115 total green; lint/typecheck/e2e green.
+- **Key decisions:**
+  - **Token bridging across the portal:** tokens set on a host ancestor cannot cascade to a
+    `document.body` portal, so on each measurement pass the component copies the computed value of
+    every documented `--ac-*` token from its root onto the popup as inline custom properties
+    (unset tokens keep their CSS fallbacks). Without this, AC-2 ancestor theming would silently
+    not apply to the dropdown.
+  - **Below-threshold popup (state 02)** is component-local (input focus + `0 < len < minChars`):
+    the hook's `isOpen` stays `false` below the threshold by design (1.1), so `aria-expanded`
+    remains `"false"` — the hint layer is not the ARIA listbox popup. Escape dismisses it via a
+    guard that runs only if the hook's `onKeyDown` did not consume the event; dismissal is keyed
+    to the query so typing re-shows it. This is the single, documented exception to "no key
+    logic" — the hook cannot own a state it never enters, and the footer promises "esc to close".
+  - **Error tone mechanism (AC state 08):** `messages.error(error)` returns
+    `{ title, description, tone: 'error'|'warning', retryable }`; `tone: 'warning'` renders the
+    amber callout, `retryable: false` hides the retry button. The lib never learns error causes.
+  - **Footer seam (AC-8):** single `renderFooter(context)` prop (status/query/resultCount/
+    minChars/belowThreshold) with the design texts as defaults; error state defaults to no footer
+    (per design state 07). "N of M" totals are the host's override since the component cannot
+    know M.
+  - **Retry** re-fires the last query through `handlers.onInputChange(state.query)` (normal
+    threshold/debounce/abort path) and refocuses the input.
+- **Grep gate note (Task 4):** `grep -ri "github|rate" src/lib/autocomplete/` shows only
+  pre-existing Story 0.3 comments in `tokens.css` and incidental substrings ("sepa**rate**",
+  "nar**rate**s") in TSDoc prose. Zero GitHub/rate-limit knowledge (types, strings, logic) exists
+  in the lib; no new comment mentions either concept.
+- `--ac-color-success` is consumed by a documented `.ok` utility class so every AC-3 token has
+  its baked fallback in the module (the design reserves success for live-region/demo accents).
+
+### Pre-PR review gate (mandatory)
+
+- **Security review (skill):** zero findings. Verified: no HTML/string-to-DOM sinks (all dynamic
+  content rendered as React children), token bridge copies only an allowlisted set of `--ac-*`
+  names from the host's own cascade, no URL/`window.open` handling in this story, no network/
+  storage/secrets in the diff.
+- **Codex second-pass review:** 5 findings, each triaged empirically:
+  1. **CONFIRMED (fixed):** `aria-controls` referenced a non-existent listbox in
+     loading/empty/error states (listbox was rendered only on `success` while the hook keeps
+     `aria-expanded="true"`). Fix: the `role="listbox"` element now renders (empty) whenever the
+     popup is open, so the id reference always resolves; options populate it only on `success`.
+     Two regression tests added (ARIA in non-success states; scroll/resize listener cleanup on
+     unmount-while-open). The closed-state `aria-controls` (hook-owned, shipped in 1.2) is
+     unchanged — out of this story's diff.
+  2. **FALSE POSITIVE:** "hardcoded non-token colors" (skeleton `#e9edf3`, avatar gradient,
+     repoicon `#eef1f6`). Evidence: `docs/design/component-states.html` hardcodes exactly these
+     literals and the AC-3/0.3 token map is a closed contract — inventing undocumented `--ac-*`
+     tokens would deviate from the spec. Decorative surfaces kept design-verbatim.
+  3. **FALSE POSITIVE:** "GitHub-shaped helper classes (`.avatar`/`.repoicon`/`.path`/`.meta`/
+     `.kind`)". Evidence: story Task 1 explicitly requires authoring these classes; names are
+     generic row anatomy, no data-source knowledge.
+  4. **ACKNOWLEDGED (out of spec):** token bridge refreshes on open/scroll/resize only (exactly
+     what AC-5 mandates); flipping an ancestor token while the dropdown is open updates the popup
+     on the next measurement, not synchronously. Documented as a known limitation in the feature
+     README.
+  5. **CONFIRMED (fixed):** test gap for non-success ARIA and listener cleanup — covered by the
+     two tests added under finding 1.
+- **Re-verification after fixes:** `pnpm lint && pnpm typecheck && pnpm test` (115 tests) and
+  `pnpm test:e2e` all green.
+
 ### File List
+
+- `src/lib/autocomplete/Autocomplete.tsx` — NEW
+- `src/lib/autocomplete/Autocomplete.module.css` — NEW
+- `src/lib/autocomplete/Autocomplete.test.tsx` — NEW
+- `src/lib/autocomplete/types.ts` — UPDATE (component prop types)
+- `docs/features/epic-1-core-autocomplete/1-3-autocomplete-component/README.md` — NEW
+- `docs/features/epic-1-core-autocomplete/1-3-autocomplete-component/MANUAL_TESTING.md` — NEW
+- `docs/implementation-artifacts/1-3-autocomplete-component.md` — UPDATE (this record)
 
 ## Change Log
 
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
 | 2026-07-09 | 0.1 | Initial draft (headless create-story, Approved) | bmad-create-story |
+| 2026-07-09 | 1.0 | Implemented: component + CSS module + 43 tests + docs; all ACs green | dev agent (Claude Fable 5) |

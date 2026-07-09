@@ -1,0 +1,89 @@
+/**
+ * github-autocomplete — `--ac-*` design token contract (Story 0.3, AR-5).
+ *
+ * This file is the documented source of the component's themeable surface and
+ * of the fallback values Epic 1 bakes into `Autocomplete.module.css` as
+ * `var(--ac-<area>-<property>, <fallback>)`. Values are copied 1:1 from
+ * `docs/design/design-tokens.md` — the component is fully styled in an
+ * unstyled host because every `var()` fallback equals the value below.
+ *
+ * Scope: this file is a reference — no module imports it at this stage. Its
+ * declarations live under the component wrapper class `.acRoot` (the
+ * spec-authorized alternative to `:root`), never on `:root`/`html`/`body`, so
+ * even when imported it introduces only custom-property declarations under a
+ * class the host does not use (NFR-5). Hosts theme the component by setting
+ * any `--ac-*` property on any ancestor — never by piercing selectors.
+ */
+
+.acRoot {
+  /* ------------------------------------------------------------------ */
+  /* Color                                                               */
+  /* ------------------------------------------------------------------ */
+
+  /* Input + dropdown background. */
+  --ac-color-surface: #FFFFFF;
+
+  /* Primary text — 16.1:1 on surface (AAA). */
+  --ac-color-text: #1F2328;
+
+  /* Meta text: bio, description, counts — 4.9:1 on surface (AA normal text). */
+  --ac-color-text-muted: #59636E;
+
+  /*
+   * Focus ring, active accents, links — 7.1:1 on surface (AA(A)), ≥3:1 as a
+   * non-text focus indicator. Visible-focus guarantee (NFR-1): Epic 1 renders
+   * this as a 2px accent focus ring with 2px offset; the highlighted row uses
+   * background + a left accent bar, never color alone.
+   */
+  --ac-color-accent: #6639BA;
+
+  /* Keyboard-highlighted row background — text 15:1, muted 4.6:1, accent 6.5:1 on it (all AA). */
+  --ac-color-highlight: #F5F1FB;
+
+  /* Input/dropdown borders, dividers — decorative; focus relies on the accent ring, not the border. */
+  --ac-color-border: #D1D9E0;
+
+  /* Error state text/icon — 4.7:1 on surface (AA). */
+  --ac-color-danger: #CF222E;
+
+  /* Rate-limit state text/icon — 4.6:1 on surface (AA). */
+  --ac-color-warning: #9A6700;
+
+  /* Rate-limit callout background — 13.9:1 with #1F2328 text (AAA). */
+  --ac-color-warning-bg: #FFF8C5;
+
+  /* Live-region OK / demo checkmarks — 5.0:1 on surface (AA). */
+  --ac-color-success: #1A7F37;
+
+  /* ------------------------------------------------------------------ */
+  /* Typography (system stacks only — the component loads no webfonts)   */
+  /* ------------------------------------------------------------------ */
+
+  /* Component UI text. */
+  --ac-font-ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* Logins and owner/repo paths — identifiers are code, monospace encodes that. */
+  --ac-font-mono: ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, monospace;
+
+  /* ------------------------------------------------------------------ */
+  /* Spacing & shape                                                     */
+  /* ------------------------------------------------------------------ */
+
+  /* Input + dropdown corner radius. */
+  --ac-radius: 10px;
+
+  /* Row highlight radius (inset within dropdown padding). */
+  --ac-radius-item: 6px;
+
+  /* Base unit; row padding 8×12, dropdown inset 6, input padding 10×12. */
+  --ac-space: 8px;
+
+  /* Dropdown elevation (portal floats over any host background). */
+  --ac-shadow: 0 8px 24px rgba(31,35,40,.12), 0 1px 3px rgba(31,35,40,.08);
+
+  /* ~8 rows then native scroll (50-item cap, no pagination). */
+  --ac-dropdown-max-height: 368px;
+
+  /* Portal layer. */
+  --ac-z-index: 1000;
+}

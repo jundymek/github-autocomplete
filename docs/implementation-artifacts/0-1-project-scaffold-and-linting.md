@@ -1,6 +1,6 @@
 # Story 0.1: Project scaffold, linting, and boundary rule
 
-Status: Approved
+Status: Ready for Review
 
 ## Story
 
@@ -38,60 +38,60 @@ from violating the reusable-component isolation.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Bootstrap the Vite React + TypeScript project on pnpm (AC: 1, 2)
-  - [ ] From a clean repo, scaffold with the Vite `react-ts` template:
+- [x] Task 1 — Bootstrap the Vite React + TypeScript project on pnpm (AC: 1, 2)
+  - [x] From a clean repo, scaffold with the Vite `react-ts` template:
         `pnpm create vite@latest . --template react-ts` (scaffold into a temp dir and merge if the
         repo is non-empty, keeping existing `docs/`, `_bmad/`, `.claude/`, `README.md`, `.gitignore`).
-  - [ ] Confirm Vite is **7.x** and React is **19.x** in `package.json`; align if the template
+  - [x] Confirm Vite is **7.x** and React is **19.x** in `package.json`; align if the template
         installs a different major. [Source: architecture.md#AR-1]
-  - [ ] Run `pnpm install` and commit `pnpm-lock.yaml`.
-  - [ ] Verify the dependency manifest contains **no** autocomplete/combobox/component library and
+  - [x] Run `pnpm install` and commit `pnpm-lock.yaml`.
+  - [x] Verify the dependency manifest contains **no** autocomplete/combobox/component library and
         **no** state-management library (grep `package.json` deps — nothing like `downshift`,
         `react-select`, `@headlessui/*`, `@mui/*`, `redux`, `zustand`, `jotai`, `recoil`). [FR-13]
-- [ ] Task 2 — Strip the template down to a strict, minimal placeholder stage (AC: 1)
-  - [ ] Remove Vite demo cruft (default logos/SVGs, counter demo in `App.tsx`, demo CSS). Keep
+- [x] Task 2 — Strip the template down to a strict, minimal placeholder stage (AC: 1)
+  - [x] Remove Vite demo cruft (default logos/SVGs, counter demo in `App.tsx`, demo CSS). Keep
         `App.tsx` as a minimal placeholder heading — **no component code yet** (per epics §Technical
         notes). [Source: epics.md#Story 0.1]
-  - [ ] Confirm `tsconfig.json` (and `tsconfig.app.json`) has `"strict": true`. Vite's template sets
+  - [x] Confirm `tsconfig.json` (and `tsconfig.app.json`) has `"strict": true`. Vite's template sets
         it; verify explicitly. [Source: architecture.md#AR-1]
-- [ ] Task 3 — Pin the runtime (AC: 1)
-  - [ ] Add `.nvmrc` with `22`.
-  - [ ] Add `"engines": { "node": ">=22", "pnpm": ">=9" }` to `package.json`. [Source: architecture.md#AR-1]
-- [ ] Task 4 — ESLint 9 flat config + Prettier (AC: 3)
-  - [ ] Create `eslint.config.js` (flat config) wiring `@eslint/js`, `typescript-eslint`, and
+- [x] Task 3 — Pin the runtime (AC: 1)
+  - [x] Add `.nvmrc` with `22`.
+  - [x] Add `"engines": { "node": ">=22", "pnpm": ">=9" }` to `package.json`. [Source: architecture.md#AR-1]
+- [x] Task 4 — ESLint 9 flat config + Prettier (AC: 3)
+  - [x] Create `eslint.config.js` (flat config) wiring `@eslint/js`, `typescript-eslint`, and
         `eslint-plugin-react-hooks`. No legacy `.eslintrc`. [Source: architecture.md#AR-13]
-  - [ ] Add Prettier (`prettier` + `.prettierrc`) and `eslint-config-prettier` so ESLint carries no
+  - [x] Add Prettier (`prettier` + `.prettierrc`) and `eslint-config-prettier` so ESLint carries no
         stylistic rules. Add a `.prettierignore` (exclude `docs/`, lockfile, build output). [Source: architecture.md#AR-13]
-  - [ ] Confirm `pnpm lint` passes clean.
-- [ ] Task 5 — The lib-boundary rule (AC: 4)
-  - [ ] In `eslint.config.js`, add a `no-restricted-imports` override **scoped to `src/lib/**`**
+  - [x] Confirm `pnpm lint` passes clean.
+- [x] Task 5 — The lib-boundary rule (AC: 4)
+  - [x] In `eslint.config.js`, add a `no-restricted-imports` override **scoped to `src/lib/**`**
         forbidding import patterns matching `**/features/**`, `**/features/*`, and app/demo files
         (`**/App`, `**/main`, `**/demo/**`). Message must explain the AR-2 one-way import rule.
         [Source: architecture.md#AR-2, CLAUDE.md#Architecture boundary]
-  - [ ] **Prove the rule fires:** temporarily add an import from `src/features/**` inside a file
+  - [x] **Prove the rule fires:** temporarily add an import from `src/features/**` inside a file
         under `src/lib/autocomplete/`, run `pnpm lint`, confirm it errors, then revert. Record the
         error output in the Dev Agent Record / README. (A permanent negative fixture is optional.)
-- [ ] Task 6 — Directory skeleton (AC: 5)
-  - [ ] Create `src/lib/autocomplete/`, `src/features/github-search/`, `src/demo/`, `e2e/` (with a
+- [x] Task 6 — Directory skeleton (AC: 5)
+  - [x] Create `src/lib/autocomplete/`, `src/features/github-search/`, `src/demo/`, `e2e/` (with a
         `.gitkeep` where empty). Layout must match architecture §3.2 exactly. [Source: architecture.md#3.2]
-- [ ] Task 7 — Environment + secret hygiene (AC: 6)
-  - [ ] Create `.env.example` containing `VITE_GITHUB_TOKEN=` and a comment: optional, never commit a
+- [x] Task 7 — Environment + secret hygiene (AC: 6)
+  - [x] Create `.env.example` containing `VITE_GITHUB_TOKEN=` and a comment: optional, never commit a
         real token. [Source: architecture.md#AR-9, prd.md#FR-16]
-  - [ ] Ensure `.gitignore` ignores `.env.local`, `_bmad/`, `.claude/` (add if missing; do not
+  - [x] Ensure `.gitignore` ignores `.env.local`, `_bmad/`, `.claude/` (add if missing; do not
         duplicate). [Source: CLAUDE.md, prd.md#NFR-6]
-- [ ] Task 8 — Scripts contract (AC: 7)
-  - [ ] Add `package.json` scripts: `dev` = `vite`, `build` = `vite build`, `preview` = `vite preview`,
+- [x] Task 8 — Scripts contract (AC: 7)
+  - [x] Add `package.json` scripts: `dev` = `vite`, `build` = `vite build`, `preview` = `vite preview`,
         `lint` = `eslint .`, `typecheck` = `tsc --noEmit`, `format` = `prettier --write .`. Add
         placeholder `test` = `vitest run`, `test:watch` = `vitest`, `test:e2e` = `playwright test`
         (Story 0.2 installs the tools; these can no-op/fail-cleanly until then, but the script names
         are fixed now). [Source: architecture.md#AR-13, epics.md#Story 0.2]
-- [ ] Task 9 — Documentation deliverable (Definition of Done)
-  - [ ] Create `docs/features/epic-0-foundation/0-1-project-scaffold-and-linting/README.md` per the
+- [x] Task 9 — Documentation deliverable (Definition of Done)
+  - [x] Create `docs/features/epic-0-foundation/0-1-project-scaffold-and-linting/README.md` per the
         CLAUDE.md template (what was scaffolded, versions, how the boundary rule works + the proof
         output, how to verify). **No MANUAL_TESTING.md** (tooling only). PERFORMANCE.md is **not
         applicable** for this story. [Source: CLAUDE.md#Documentation deliverables, epics.md#Story 0.1]
-- [ ] Task 10 — Verify (AC: 1, 3)
-  - [ ] Run `pnpm lint`, `pnpm typecheck`, and `pnpm build`; confirm all pass and paste summaries into
+- [x] Task 10 — Verify (AC: 1, 3)
+  - [x] Run `pnpm lint`, `pnpm typecheck`, and `pnpm build`; confirm all pass and paste summaries into
         the Dev Agent Record.
 
 ## Documentation deliverables
@@ -205,16 +205,126 @@ gitignored, never committed. [Source: architecture.md#AR-9, prd.md#NFR-6, CLAUDE
 
 ## Dev Agent Record
 
+### Implementation Plan
+
+1. Scaffold Vite `react-ts` template into a temp dir, merge into repo root (preserve `docs/`,
+   `_bmad/`, `.claude/`, `CLAUDE.md`, `README.md`, `.gitignore`).
+2. Confirm/align Vite 7.x, React 19.x. `pnpm install`, commit lockfile. Grep deps for forbidden
+   packages (none expected — template is minimal).
+3. Strip demo cruft: remove default SVGs/logos, counter demo, demo CSS; `App.tsx` becomes a
+   minimal placeholder heading. Confirm `strict: true` in tsconfig files.
+4. Add `.nvmrc` (22) and `engines` field in `package.json`.
+5. Add ESLint 9 flat config (`@eslint/js`, `typescript-eslint`, `eslint-plugin-react-hooks`,
+   `eslint-config-prettier` last). Add Prettier + `.prettierrc` + `.prettierignore`.
+6. Add `no-restricted-imports` override scoped to `src/lib/**` forbidding `**/features/**` and
+   app/demo imports. Prove it fires with a temporary offending import, capture the error output,
+   then revert.
+7. Create directory skeleton: `src/lib/autocomplete/`, `src/features/github-search/`,
+   `src/demo/`, `e2e/` with `.gitkeep` placeholders.
+8. Create `.env.example` with `VITE_GITHUB_TOKEN=` + comment. Verify `.gitignore` already covers
+   `.env.local`, `_bmad/`, `.claude/` (confirmed present — no edit needed unless gaps found).
+9. Wire scripts contract in `package.json` (dev/build/preview/lint/typecheck/format real;
+   test/test:watch/test:e2e as fixed-name placeholders per spec).
+10. Write documentation deliverable README under
+    `docs/features/epic-0-foundation/0-1-project-scaffold-and-linting/`.
+11. Verify `pnpm lint && pnpm typecheck && pnpm build`.
+12. Codex review of branch diff vs master; address Critical/Important findings.
+13. Security self-audit; update Dev Agent Record; commit (scope 0.1, no AI attribution); push;
+    open PR.
+
+Constraint from coordinator: other background agents are concurrently writing untracked story
+spec files into `docs/implementation-artifacts/` (`1-*.md`, `2-*.md`, `3-*.md`) — not part of
+this story. Never `git add -A`/`git add .`; stage explicitly only files touched by story 0.1.
+
 ### Agent Model Used
+
+claude-sonnet-5
 
 ### Debug Log References
 
+- `pnpm lint` clean run (final): exit 0, no output.
+- `pnpm typecheck` clean run (final): exit 0, no output.
+- `pnpm build`: `tsc -b && vite build` → 29 modules transformed, `dist/` produced, exit 0.
+- Boundary-rule proof (initial): `pnpm lint` against a temporary
+  `src/lib/autocomplete/_boundary-proof.ts` importing `../../features/github-search/nothing`
+  produced `no-restricted-imports` error; file then deleted.
+- Codex review (`codex exec --sandbox read-only`) probed the boundary rule with
+  `eslint --stdin` against `../../demo` (bare) and `../../App.tsx` (extension-qualified) — both
+  initially passed lint (High finding), fixed by widening the `no-restricted-imports` `group`
+  patterns; re-probed clean (both now error).
+
 ### Completion Notes List
 
+- Scaffolded via `pnpm create vite@latest . --template react-ts` into a temp dir, then merged into
+  the repo root, preserving `docs/`, `_bmad/`, `.claude/`, `CLAUDE.md`, `.gitignore`.
+- The current Vite template installs Vite 8 / TypeScript ~6 / oxlint by default. Hand-pinned
+  `package.json` to spec: Vite `^7.3.6`, React `19.2.7`, TypeScript `~5.9.3`; replaced oxlint with
+  ESLint 9 (`^9.39.4`) + `typescript-eslint@^8.47.1` + `eslint-plugin-react-hooks@^7.0.1` +
+  `eslint-config-prettier@^10.1.8` + `prettier@^3.6.2`; `pnpm install` resolved and generated
+  `pnpm-lock.yaml` against those pins.
+- Added `"strict": true` explicitly to both `tsconfig.app.json` and `tsconfig.node.json` (the
+  current template does not state it explicitly, though most strict sub-flags are implied).
+- Stripped Vite demo cruft (counter, logos, hero image, marketing sections, `App.css`,
+  `public/icons.svg`); `App.tsx` is now a minimal placeholder heading only.
+- `eslint-plugin-react-hooks@7`'s `configs['recommended-latest']` is legacy-shaped
+  (`plugins: [...]` as an array) and rejected by pure flat config; used
+  `configs.flat['recommended-latest']` instead, which is properly flat-shaped.
+- Grep of `package.json`/`pnpm-lock.yaml` confirms no autocomplete/combobox/component-library or
+  state-management package present (2 runtime deps: `react`, `react-dom`; 13 dev deps, all
+  tooling).
+- Directory skeleton created with `.gitkeep` placeholders: `src/lib/autocomplete/`,
+  `src/features/github-search/`, `src/demo/`, `e2e/`.
+- `.env.example` created with `VITE_GITHUB_TOKEN=` and a no-real-value comment. `.gitignore`
+  already ignored `.env.local`, `_bmad/`, `.claude/` from prior repo setup — no edit needed.
+- **Codex review** (`codex exec --sandbox read-only --cd <repo> "..."`) on `git diff
+  master...HEAD` returned 4 findings:
+  - High — boundary-rule glob patterns (`**/App`, `**/demo/**`, etc.) missed extension-qualified
+    (`App.tsx`) and bare-directory (`../../demo`) import spellings, verified with
+    `eslint --stdin`. **Fixed**: widened the `group` array in `eslint.config.js` to include
+    `**/App.tsx`, `**/App.ts`, `**/main.tsx`, `**/main.ts`, and bare `**/demo`; re-probed both
+    bypass cases, now correctly rejected.
+  - Medium — `src/features/**` has no lint rule preventing it from importing `demo/App`.
+    **Consciously skipped**: AC4 explicitly scopes the rule to `src/lib/**` only
+    ("`no-restricted-imports` ESLint rule **scoped to `src/lib/**`**"); adding a second boundary
+    edge is outside this story's acceptance criteria and can be a follow-up if the team wants the
+    full layer graph mechanically enforced.
+  - Low — `tsconfig.app.json` missing `DOM.Iterable` in `lib` versus current stock Vite template.
+    **Fixed**: added.
+  - Low — `tsconfig.app.json` missing `noUncheckedSideEffectImports`. **Fixed**: added.
+  - All fixes re-verified with `pnpm lint && pnpm typecheck && pnpm build` — all green.
+- **Security self-audit**: no secrets in tracked files (grepped for token/key/password patterns —
+  none found); no unpinned `curl | bash`/`sh` patterns; `.env.local` confirmed gitignored via
+  `git check-ignore -v`; dependency count sane (2 runtime, 13 dev, no forbidden packages).
+
 ### File List
+
+- `package.json` — NEW
+- `pnpm-lock.yaml` — NEW
+- `tsconfig.json` — NEW
+- `tsconfig.app.json` — NEW
+- `tsconfig.node.json` — NEW
+- `vite.config.ts` — NEW
+- `.nvmrc` — NEW
+- `eslint.config.js` — NEW
+- `.prettierrc` — NEW
+- `.prettierignore` — NEW
+- `.env.example` — NEW
+- `index.html` — NEW
+- `src/main.tsx` — NEW
+- `src/App.tsx` — NEW
+- `src/index.css` — NEW
+- `public/favicon.svg` — NEW
+- `src/lib/autocomplete/.gitkeep` — NEW
+- `src/features/github-search/.gitkeep` — NEW
+- `src/demo/.gitkeep` — NEW
+- `e2e/.gitkeep` — NEW
+- `docs/features/epic-0-foundation/0-1-project-scaffold-and-linting/README.md` — NEW
+- `docs/implementation-artifacts/0-1-project-scaffold-and-linting.md` — UPDATE (Dev Agent Record,
+  task checkboxes, Change Log)
 
 ## Change Log
 
 | Date | Version | Description | Author |
 |---|---|---|---|
 | 2026-07-09 | 0.1 | Initial draft — story approved, ready for dev | Scrum Master (bmad-create-story) |
+| 2026-07-09 | 0.1 | Implemented: Vite 7 + React 19 + TS strict scaffold, ESLint 9 flat + Prettier, lib-boundary rule (Codex-hardened), directory skeleton, env/secret hygiene, scripts contract, docs | claude-sonnet-5 |

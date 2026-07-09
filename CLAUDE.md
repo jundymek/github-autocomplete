@@ -20,6 +20,10 @@ Vite · React 19 · TypeScript strict · CSS Modules + design tokens as CSS cust
 Tailwind and no CSS framework inside `src/lib/autocomplete/` — the component must be self-contained;
 see architecture.md) · Vitest + React Testing Library + MSW for unit/integration tests · Playwright
 (+ `@axe-core/playwright`) for a thin e2e layer. Package manager is **pnpm** (not npm), Node 22.
+**Version policy: latest stable of every dependency at implementation time** (AR-1). If a story
+spec's Dev Notes pin an older version, the policy wins — install latest; hold back the smallest
+possible piece only on real incompatibility, and record the holdback + reason in the Dev Agent
+Record and feature README.
 GitHub API is called client-side, unauthenticated by default, with an optional token (never commit
 a token). No state management library, no autocomplete/combobox library (explicit task requirement),
 no component library.

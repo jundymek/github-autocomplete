@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Component states — github-autocomplete</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ————— Component tokens (the --ac-* API; fallbacks = these values) ————— */
+  :root {
+    --ac-color-surface: #ffffff;
+    --ac-color-text: #1f2328;
+    --ac-color-text-muted: #59636e;
+    --ac-color-accent: #6639ba;
+    --ac-color-highlight: #f5f1fb;
+    --ac-color-border: #d1d9e0;
+    --ac-color-danger: #cf222e;
+    --ac-color-warning: #9a6700;
+    --ac-color-warning-bg: #fff8c5;
+    --ac-color-success: #1a7f37;
+    --ac-font-ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --ac-font-mono: ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, monospace;
+    --ac-radius: 10px;
+    --ac-radius-item: 6px;
+    --ac-shadow: 0 8px 24px rgba(31,35,40,.12), 0 1px 3px rgba(31,35,40,.08);
+    --ac-dropdown-max-height: 368px;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    font-family: var(--ac-font-ui);
+    background: #f2f4f8; color: #1f2328;
+    padding: 48px 32px 96px;
+  }
+  header.page { max-width: 1160px; margin: 0 auto 40px; }
+  .eyebrow {
+    font: 500 11.5px/1 var(--ac-font-mono); letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ac-color-accent);
+  }
+  h1 { font-family: "Space Grotesk", var(--ac-font-ui); font-weight: 600; font-size: 28px; margin-top: 10px; }
+  header.page p { color: var(--ac-color-text-muted); font-size: 14px; margin-top: 6px; max-width: 62ch; }
+  .grid {
+    max-width: 1160px; margin: 0 auto;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 40px 28px;
+  }
+  .spec { display: flex; flex-direction: column; gap: 12px; }
+  .spec > h2 {
+    font: 500 11.5px/1 var(--ac-font-mono); letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ac-color-text-muted); display: flex; gap: 8px; align-items: baseline;
+  }
+  .spec > h2 b { color: var(--ac-color-text); font-weight: 500; }
+  .note { font-size: 12.5px; color: var(--ac-color-text-muted); line-height: 1.5; }
+  .note code { font-family: var(--ac-font-mono); font-size: 11.5px; background: #e9edf3; padding: 1px 5px; border-radius: 4px; }
+
+  /* ————— The component ————— */
+  .ac { position: relative; width: 100%; max-width: 360px; font-family: var(--ac-font-ui); }
+  .ac-input {
+    width: 100%; padding: 10px 40px 10px 12px;
+    font: 400 15px/1.4 var(--ac-font-ui); color: var(--ac-color-text);
+    background: var(--ac-color-surface);
+    border: 1px solid var(--ac-color-border); border-radius: var(--ac-radius);
+    outline: none;
+  }
+  .ac-input::placeholder { color: var(--ac-color-text-muted); }
+  .ac-input:focus, .ac--focus .ac-input {
+    border-color: var(--ac-color-accent);
+    box-shadow: 0 0 0 2px var(--ac-color-surface), 0 0 0 4px var(--ac-color-accent);
+  }
+  .ac-slot { position: absolute; right: 12px; top: 12px; display: flex; gap: 4px; }
+  .ac-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--ac-color-accent); animation: ac-pulse 900ms infinite ease-in-out; }
+  .ac-dot:nth-child(2) { animation-delay: 150ms; }
+  .ac-dot:nth-child(3) { animation-delay: 300ms; }
+  @keyframes ac-pulse { 0%,100% { opacity: .25; transform: scale(.8);} 40% { opacity: 1; transform: scale(1);} }
+  @media (prefers-reduced-motion: reduce) { .ac-dot { animation: none; opacity: .7; } .ac-pop { animation: none; } }
+
+  .ac-pop {
+    position: absolute; top: calc(100% + 6px); left: 0; right: 0;  /* portal in real impl */
+    background: var(--ac-color-surface);
+    border: 1px solid var(--ac-color-border); border-radius: var(--ac-radius);
+    box-shadow: var(--ac-shadow);
+    padding: 6px; z-index: 1000;
+    animation: ac-in 120ms ease-out;
+  }
+  @keyframes ac-in { from { opacity: 0; transform: translateY(4px); } }
+  .ac-list { list-style: none; padding: 0; max-height: var(--ac-dropdown-max-height); overflow-y: auto; }
+  .ac-item {
+    display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: center;
+    padding: 8px 10px; border-radius: var(--ac-radius-item); cursor: pointer;
+    border-left: 2px solid transparent;
+  }
+  .ac-item[aria-selected="true"] {
+    background: var(--ac-color-highlight);
+    border-left-color: var(--ac-color-accent);
+  }
+  .ac-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg,#c9b7ec,#8fb0d9); }
+  .ac-repoicon {
+    width: 28px; height: 28px; border-radius: 8px; background: #eef1f6;
+    display: grid; place-items: center; color: var(--ac-color-text-muted);
+    font: 500 13px/1 var(--ac-font-mono);
+  }
+  .ac-name { font: 500 14px/1.35 var(--ac-font-ui); color: var(--ac-color-text); display: flex; gap: 8px; align-items: baseline; min-width: 0; flex-wrap: wrap; }
+  .ac-name .path { font: 400 12.5px/1 var(--ac-font-mono); color: var(--ac-color-text-muted); }
+  .ac-name mark { background: none; color: var(--ac-color-accent); font-weight: 600; }
+  .ac-meta { font-size: 12.5px; color: var(--ac-color-text-muted); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ac-kind {
+    font: 500 10.5px/1 var(--ac-font-mono); letter-spacing: .06em; text-transform: uppercase;
+    color: var(--ac-color-text-muted); align-self: start; padding-top: 3px;
+  }
+  .ac-foot {
+    border-top: 1px solid var(--ac-color-border); margin: 6px -6px -6px; padding: 8px 14px;
+    font: 500 11.5px/1 var(--ac-font-mono); letter-spacing: .04em;
+    color: var(--ac-color-text-muted); display: flex; justify-content: space-between;
+  }
+  .ac-state { padding: 22px 16px; text-align: center; }
+  .ac-state .t { font: 500 14px/1.4 var(--ac-font-ui); }
+  .ac-state .d { font-size: 12.5px; color: var(--ac-color-text-muted); margin-top: 4px; line-height: 1.5; }
+  .ac-state.error .t { color: var(--ac-color-danger); }
+  .ac-state.warn {
+    background: var(--ac-color-warning-bg); border-radius: var(--ac-radius-item);
+    text-align: left; padding: 14px 16px;
+  }
+  .ac-state.warn .t { color: var(--ac-color-warning); }
+  .ac-retry {
+    margin-top: 10px; display: inline-block;
+    font: 500 13px/1 var(--ac-font-ui); color: var(--ac-color-accent);
+    background: none; border: 1px solid var(--ac-color-border); border-radius: 6px;
+    padding: 7px 12px; cursor: pointer;
+  }
+  .ac-retry:focus-visible { outline: 2px solid var(--ac-color-accent); outline-offset: 2px; }
+  .ac-skel { display: grid; grid-template-columns: 28px 1fr; gap: 10px; padding: 8px 10px; align-items: center; }
+  .ac-skel .c { width: 28px; height: 28px; border-radius: 50%; background: #e9edf3; }
+  .ac-skel .l { height: 10px; border-radius: 5px; background: #e9edf3; width: 70%; }
+  .ac-skel:nth-child(2) .l { width: 52%; }
+  .ac-skel:nth-child(3) .l { width: 61%; }
+</style>
+</head>
+<body>
+
+<header class="page">
+  <div class="eyebrow">docs/design · visual ground truth</div>
+  <h1>Autocomplete — component states</h1>
+  <p>Every state a dev agent must reproduce. The dropdown is a portal in the real implementation;
+     here it is inline for mockup simplicity. Tokens: see <code>design-tokens.md</code>.</p>
+</header>
+
+<div class="grid">
+
+  <!-- 1 idle -->
+  <section class="spec">
+    <h2><b>01 idle</b> nothing typed</h2>
+    <div class="ac">
+      <input class="ac-input" placeholder="Search GitHub users & repositories…" aria-label="Search GitHub">
+    </div>
+    <p class="note">Closed. <code>aria-expanded="false"</code>. Placeholder names both domains.</p>
+  </section>
+
+  <!-- 2 below threshold -->
+  <section class="spec">
+    <h2><b>02 below threshold</b> 1–2 chars</h2>
+    <div class="ac ac--focus">
+      <input class="ac-input" value="re" aria-label="Search GitHub">
+      <div class="ac-pop">
+        <div class="ac-state"><div class="d">Type <b>1 more character</b> to search</div></div>
+        <div class="ac-foot"><span>min 3 characters</span><span>esc to close</span></div>
+      </div>
+    </div>
+    <p class="note">No request fired. Countdown hint makes the 3-char rule discoverable — the contract narrated in the footer (signature element).</p>
+  </section>
+
+  <!-- 3 loading -->
+  <section class="spec">
+    <h2><b>03 loading</b> request in flight</h2>
+    <div class="ac ac--focus">
+      <input class="ac-input" value="rea" aria-label="Search GitHub">
+      <div class="ac-slot"><span class="ac-dot"></span><span class="ac-dot"></span><span class="ac-dot"></span></div>
+      <div class="ac-pop">
+        <div class="ac-skel"><div class="c"></div><div class="l"></div></div>
+        <div class="ac-skel"><div class="c"></div><div class="l"></div></div>
+        <div class="ac-skel"><div class="c"></div><div class="l"></div></div>
+        <div class="ac-foot"><span>searching…</span><span></span></div>
+      </div>
+    </div>
+    <p class="note">Pulse dots in the trailing slot + 3 skeleton rows. Live region announces "Searching". Previous results are replaced, not shown stale.</p>
+  </section>
+
+  <!-- 4 results -->
+  <section class="spec">
+    <h2><b>04 results</b> users + repos merged A→Z</h2>
+    <div class="ac ac--focus">
+      <input class="ac-input" value="rea" aria-label="Search GitHub" aria-expanded="true">
+      <div class="ac-pop">
+        <ul class="ac-list" role="listbox">
+          <li class="ac-item" role="option">
+            <span class="ac-repoicon">{ }</span>
+            <span><span class="ac-name"><mark>rea</mark>ct <span class="path">facebook/react</span></span>
+            <div class="ac-meta">The library for web and native user interfaces</div></span>
+            <span class="ac-kind">repo</span>
+          </li>
+          <li class="ac-item" role="option">
+            <span class="ac-avatar"></span>
+            <span><span class="ac-name"><mark>rea</mark>ctjs</span>
+            <div class="ac-meta">@reactjs · organization</div></span>
+            <span class="ac-kind">user</span>
+          </li>
+          <li class="ac-item" role="option">
+            <span class="ac-repoicon">{ }</span>
+            <span><span class="ac-name"><mark>rea</mark>ct-router <span class="path">remix-run/react-router</span></span>
+            <div class="ac-meta">Declarative routing for React</div></span>
+            <span class="ac-kind">repo</span>
+          </li>
+          <li class="ac-item" role="option">
+            <span class="ac-avatar" style="background:linear-gradient(135deg,#e8c3a8,#c98fb8)"></span>
+            <span><span class="ac-name"><mark>rea</mark>der</span>
+            <div class="ac-meta">@reader</div></span>
+            <span class="ac-kind">user</span>
+          </li>
+        </ul>
+        <div class="ac-foot"><span>50 of 1,204 · sorted A→Z</span><span>↑↓ browse · ↵ open</span></div>
+      </div>
+    </div>
+    <p class="note">Kinds are distinguished three ways (never color alone): avatar-circle vs <code>{ }</code>-tile, mono <code>owner/repo</code> path, and the KIND column. Query match echoed in accent. Sort key: bare repo name / login.</p>
+  </section>
+
+  <!-- 5 keyboard highlight -->
+  <section class="spec">
+    <h2><b>05 keyboard highlight</b> ArrowDown ×2</h2>
+    <div class="ac ac--focus">
+      <input class="ac-input" value="rea" aria-label="Search GitHub" aria-expanded="true">
+      <div class="ac-pop">
+        <ul class="ac-list" role="listbox">
+          <li class="ac-item" role="option" aria-selected="false">
+            <span class="ac-repoicon">{ }</span>
+            <span><span class="ac-name"><mark>rea</mark>ct <span class="path">facebook/react</span></span>
+            <div class="ac-meta">The library for web and native user interfaces</div></span>
+            <span class="ac-kind">repo</span>
+          </li>
+          <li class="ac-item" role="option" aria-selected="true">
+            <span class="ac-avatar"></span>
+            <span><span class="ac-name"><mark>rea</mark>ctjs</span>
+            <div class="ac-meta">@reactjs · organization</div></span>
+            <span class="ac-kind">user</span>
+          </li>
+          <li class="ac-item" role="option" aria-selected="false">
+            <span class="ac-repoicon">{ }</span>
+            <span><span class="ac-name"><mark>rea</mark>ct-router <span class="path">remix-run/react-router</span></span>
+            <div class="ac-meta">Declarative routing for React</div></span>
+            <span class="ac-kind">repo</span>
+          </li>
+        </ul>
+        <div class="ac-foot"><span>50 of 1,204 · sorted A→Z</span><span>↑↓ browse · ↵ open</span></div>
+      </div>
+    </div>
+    <p class="note">Highlight = <code>--ac-color-highlight</code> bg + 2px accent left bar (not color alone). Focus STAYS on the input; <code>aria-activedescendant</code> points at the option. Clamps at ends, no wrap. Enter opens in a new tab.</p>
+  </section>
+
+  <!-- 6 empty -->
+  <section class="spec">
+    <h2><b>06 empty</b> no matches</h2>
+    <div class="ac ac--focus">
+      <input class="ac-input" value="xqzyw" aria-label="Search GitHub" aria-expanded="true">
+      <div class="ac-pop">
+        <div class="ac-state">
+          <div class="t">No matches for “xqzyw”</div>
+          <div class="d">Check the spelling or try a shorter query.</div>
+        </div>
+        <div class="ac-foot"><span>0 results</span><span>esc to close</span></div>
+      </div>
+    </div>
+    <p class="note">Echoes the query, offers a next step. Announced via the live region.</p>
+  </section>
+
+  <!-- 7 error -->
+  <section class="spec">
+    <h2><b>07 error</b> network / HTTP failure</h2>
+    <div class="ac ac--focus">
+      <input class="ac-input" value="react" aria-label="Search GitHub" aria-expanded="true">
+      <div class="ac-pop">
+        <div class="ac-state error">
+          <div class="t">Search failed</div>
+          <div class="d">GitHub didn’t respond. Check your connection and try again.</div>
+          <button class="ac-retry">Try again</button>
+        </div>
+      </div>
+    </div>
+    <p class="note">All-or-nothing: if either of the two requests fails, the whole state is an error (owner decision U2) — a partial list would break the alphabetical contract. Retry re-fires the last query.</p>
+  </section>
+
+  <!-- 8 rate limit -->
+  <section class="spec">
+    <h2><b>08 rate limit</b> HTTP 403 with retry-after</h2>
+    <div class="ac ac--focus">
+      <input class="ac-input" value="react hooks" aria-label="Search GitHub" aria-expanded="true">
+      <div class="ac-pop">
+        <div class="ac-state warn">
+          <div class="t">GitHub rate limit reached</div>
+          <div class="d">Unauthenticated search allows 10 requests per minute.
+            Try again in <b>42s</b>, or add a token to raise the limit.</div>
+        </div>
+      </div>
+    </div>
+    <p class="note">Distinct from generic error: amber, names the cause, counts down from <code>retry-after</code>, points to the token option. The most likely state an evaluator hits — treat it as a first-class citizen.</p>
+  </section>
+
+  <!-- 9 focus ring -->
+  <section class="spec">
+    <h2><b>09 focus</b> visible ring</h2>
+    <div class="ac ac--focus">
+      <input class="ac-input" placeholder="Search GitHub users & repositories…" aria-label="Search GitHub">
+    </div>
+    <p class="note">2px accent ring offset by 2px of surface (<code>box-shadow</code> double ring), 7.1:1 against white — visible on any host background.</p>
+  </section>
+
+</div>
+</body>
+</html>

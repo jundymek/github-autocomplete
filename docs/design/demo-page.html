@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo page — github-autocomplete</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ac-color-surface: #ffffff; --ac-color-text: #1f2328; --ac-color-text-muted: #59636e;
+    --ac-color-accent: #6639ba; --ac-color-highlight: #f5f1fb; --ac-color-border: #d1d9e0;
+    --ac-font-ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --ac-font-mono: ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, monospace;
+    --ac-radius: 10px; --ac-radius-item: 6px;
+    --ac-shadow: 0 8px 24px rgba(31,35,40,.12), 0 1px 3px rgba(31,35,40,.08);
+    --canvas: #f2f4f8; --ink: #1f2328;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: var(--ac-font-ui); background: var(--canvas); color: var(--ink); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 28px; }
+
+  /* ————— Header: the thesis ————— */
+  header { padding: 72px 0 44px; }
+  .eyebrow { font: 500 12px/1 var(--ac-font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ac-color-accent); }
+  h1 {
+    font-family: "Space Grotesk", var(--ac-font-ui); font-weight: 600;
+    font-size: clamp(30px, 4.5vw, 42px); line-height: 1.08; letter-spacing: -.01em;
+    margin: 14px 0 12px; max-width: 21ch;
+  }
+  h1 .path { color: var(--ac-color-accent); }
+  header p.lede { font-size: 15.5px; line-height: 1.6; color: var(--ac-color-text-muted); max-width: 58ch; }
+  header p.lede code { font-family: var(--ac-font-mono); font-size: 13.5px; }
+
+  /* Contract strip — the task's requirements as UI facts */
+  .contract {
+    display: flex; flex-wrap: wrap; gap: 10px 28px; margin-top: 26px;
+    font: 500 12px/1.5 var(--ac-font-mono); color: var(--ac-color-text-muted);
+  }
+  .contract span::before { content: "▸ "; color: var(--ac-color-accent); }
+
+  /* ————— Two instances ————— */
+  .stage {
+    display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 28px;
+    align-items: start; padding-bottom: 96px;
+  }
+  @media (max-width: 860px) { .stage { grid-template-columns: 1fr; } }
+  .panel {
+    background: var(--ac-color-surface); border: 1px solid var(--ac-color-border);
+    border-radius: 14px; padding: 26px 26px 300px; /* bottom space = dropdown room in mockup */
+    position: relative;
+  }
+  .panel h2 { font-family: "Space Grotesk", var(--ac-font-ui); font-weight: 500; font-size: 19px; }
+  .panel .sub { font-size: 13.5px; color: var(--ac-color-text-muted); line-height: 1.55; margin: 6px 0 18px; }
+  .panel .sub code { font-family: var(--ac-font-mono); font-size: 12px; background: #eef1f6; padding: 1px 5px; border-radius: 4px; }
+  .badge {
+    position: absolute; top: 26px; right: 26px;
+    font: 500 10.5px/1 var(--ac-font-mono); letter-spacing: .06em; text-transform: uppercase;
+    color: var(--ac-color-accent); border: 1px solid currentColor; border-radius: 999px; padding: 5px 10px;
+  }
+
+  /* Country instance re-themes via the token API — the reuse proof */
+  .panel--countries {
+    --ac-color-accent: #0f766e;
+    --ac-color-highlight: #e9f4f2;
+  }
+
+  /* ————— Component (same CSS as component-states.html, abridged) ————— */
+  .ac { position: relative; max-width: 420px; }
+  .ac-input {
+    width: 100%; padding: 10px 12px; font: 400 15px/1.4 var(--ac-font-ui); color: var(--ac-color-text);
+    background: var(--ac-color-surface); border: 1px solid var(--ac-color-border);
+    border-radius: var(--ac-radius); outline: none;
+  }
+  .ac-input::placeholder { color: var(--ac-color-text-muted); }
+  .ac--focus .ac-input { border-color: var(--ac-color-accent); box-shadow: 0 0 0 2px var(--ac-color-surface), 0 0 0 4px var(--ac-color-accent); }
+  .ac-pop {
+    position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+    background: var(--ac-color-surface); border: 1px solid var(--ac-color-border);
+    border-radius: var(--ac-radius); box-shadow: var(--ac-shadow); padding: 6px; z-index: 1000;
+  }
+  .ac-list { list-style: none; padding: 0; }
+  .ac-item {
+    display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: center;
+    padding: 8px 10px; border-radius: var(--ac-radius-item); border-left: 2px solid transparent; cursor: pointer;
+  }
+  .ac-item[aria-selected="true"] { background: var(--ac-color-highlight); border-left-color: var(--ac-color-accent); }
+  .ac-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg,#c9b7ec,#8fb0d9); }
+  .ac-repoicon { width: 28px; height: 28px; border-radius: 8px; background: #eef1f6; display: grid; place-items: center; color: var(--ac-color-text-muted); font: 500 13px/1 var(--ac-font-mono); }
+  .ac-flag { width: 28px; height: 28px; border-radius: 8px; background: #eef1f6; display: grid; place-items: center; font-size: 15px; }
+  .ac-name { font: 500 14px/1.35 var(--ac-font-ui); display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .ac-name .path { font: 400 12.5px/1 var(--ac-font-mono); color: var(--ac-color-text-muted); }
+  .ac-name mark { background: none; color: var(--ac-color-accent); font-weight: 600; }
+  .ac-meta { font-size: 12.5px; color: var(--ac-color-text-muted); margin-top: 1px; }
+  .ac-kind { font: 500 10.5px/1 var(--ac-font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ac-color-text-muted); align-self: start; padding-top: 3px; }
+  .ac-foot {
+    border-top: 1px solid var(--ac-color-border); margin: 6px -6px -6px; padding: 8px 14px;
+    font: 500 11.5px/1 var(--ac-font-mono); letter-spacing: .04em; color: var(--ac-color-text-muted);
+    display: flex; justify-content: space-between;
+  }
+
+  footer { border-top: 1px solid var(--ac-color-border); padding: 22px 0 44px; }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 8px 28px; font: 400 12.5px/1.6 var(--ac-font-mono); color: var(--ac-color-text-muted); }
+  footer a { color: var(--ac-color-accent); text-decoration: none; }
+  footer a:hover, footer a:focus-visible { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">code challenge · makers’ den</div>
+    <h1>One autocomplete, any data.<br>Here: <span class="path">github/*</span></h1>
+    <p class="lede">A reusable, self-contained combobox built from scratch — a headless
+      <code>useAutocomplete&lt;T&gt;</code> hook, a generic <code>&lt;Autocomplete&lt;T&gt;&gt;</code> view,
+      and adapters. The left instance searches GitHub users and repositories; the right one proves
+      the same core works with any data source and theme.</p>
+    <div class="contract">
+      <span>min 3 characters</span>
+      <span>max 50 results, combined</span>
+      <span>sorted A→Z by name</span>
+      <span>↑↓ browse · ↵ opens a new tab</span>
+    </div>
+  </header>
+
+  <main class="stage">
+    <!-- Instance 1: GitHub -->
+    <section class="panel" aria-labelledby="gh-h">
+      <span class="badge">instance 01</span>
+      <h2 id="gh-h">GitHub users &amp; repositories</h2>
+      <p class="sub">Live GitHub Search API, unauthenticated. Two parallel requests
+        (<code>/search/users</code> + <code>/search/repositories</code>), merged and sorted client-side.</p>
+      <div class="ac ac--focus">
+        <input class="ac-input" value="rea" aria-label="Search GitHub users and repositories" aria-expanded="true">
+        <div class="ac-pop">
+          <ul class="ac-list" role="listbox">
+            <li class="ac-item" role="option" aria-selected="true">
+              <span class="ac-repoicon">{ }</span>
+              <span><span class="ac-name"><mark>rea</mark>ct <span class="path">facebook/react</span></span>
+              <div class="ac-meta">The library for web and native user interfaces</div></span>
+              <span class="ac-kind">repo</span>
+            </li>
+            <li class="ac-item" role="option">
+              <span class="ac-avatar"></span>
+              <span><span class="ac-name"><mark>rea</mark>ctjs</span>
+              <div class="ac-meta">@reactjs · organization</div></span>
+              <span class="ac-kind">user</span>
+            </li>
+            <li class="ac-item" role="option">
+              <span class="ac-repoicon">{ }</span>
+              <span><span class="ac-name"><mark>rea</mark>ct-router <span class="path">remix-run/react-router</span></span>
+              <div class="ac-meta">Declarative routing for React</div></span>
+              <span class="ac-kind">repo</span>
+            </li>
+          </ul>
+          <div class="ac-foot"><span>50 of 1,204 · sorted A→Z</span><span>↑↓ browse · ↵ open</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Instance 2: countries, re-themed -->
+    <section class="panel panel--countries" aria-labelledby="cn-h">
+      <span class="badge">instance 02 · same core</span>
+      <h2 id="cn-h">Country picker</h2>
+      <p class="sub">Identical <code>&lt;Autocomplete&gt;</code>, different <code>fetchSuggestions</code>
+        (static list) and a teal theme via <code>--ac-*</code> overrides — ~20 lines of adapter code.</p>
+      <div class="ac ac--focus">
+        <input class="ac-input" value="pol" aria-label="Search countries" aria-expanded="true">
+        <div class="ac-pop">
+          <ul class="ac-list" role="listbox">
+            <li class="ac-item" role="option" aria-selected="true">
+              <span class="ac-flag">🇵🇱</span>
+              <span><span class="ac-name"><mark>Pol</mark>and</span>
+              <div class="ac-meta">Warsaw · PLN</div></span>
+            </li>
+            <li class="ac-item" role="option">
+              <span class="ac-flag">🇵🇫</span>
+              <span><span class="ac-name">French <mark>Pol</mark>ynesia</span>
+              <div class="ac-meta">Papeete · XPF</div></span>
+            </li>
+          </ul>
+          <div class="ac-foot"><span>2 results · sorted A→Z</span><span>↑↓ browse · ↵ select</span></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span><a href="#">source on github</a></span>
+    <span><a href="#">docs/planning-artifacts</a></span>
+    <span>react 19 · typescript strict · zero runtime deps</span>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Styleguide — github-autocomplete</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ac-color-surface:#ffffff; --ac-color-text:#1f2328; --ac-color-text-muted:#59636e;
+    --ac-color-accent:#6639ba; --ac-color-highlight:#f5f1fb; --ac-color-border:#d1d9e0;
+    --ac-color-danger:#cf222e; --ac-color-warning:#9a6700; --ac-color-warning-bg:#fff8c5;
+    --ac-color-success:#1a7f37;
+    --ac-font-ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --ac-font-mono: ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing:border-box; margin:0; }
+  body { font-family:var(--ac-font-ui); background:#f2f4f8; color:#1f2328; padding:48px 32px 96px; }
+  .wrap { max-width:900px; margin:0 auto; }
+  .eyebrow { font:500 11.5px/1 var(--ac-font-mono); letter-spacing:.08em; text-transform:uppercase; color:var(--ac-color-accent); }
+  h1 { font-family:"Space Grotesk",var(--ac-font-ui); font-weight:600; font-size:28px; margin:10px 0 6px; }
+  .lede { color:var(--ac-color-text-muted); font-size:14px; max-width:62ch; line-height:1.6; }
+  h2 { font-family:"Space Grotesk",var(--ac-font-ui); font-weight:500; font-size:18px; margin:44px 0 16px; }
+  table { border-collapse:collapse; width:100%; background:#fff; border:1px solid var(--ac-color-border); border-radius:12px; overflow:hidden; font-size:13px; }
+  th,td { text-align:left; padding:10px 14px; border-bottom:1px solid #e9edf3; vertical-align:middle; }
+  th { font:500 11px/1 var(--ac-font-mono); letter-spacing:.06em; text-transform:uppercase; color:var(--ac-color-text-muted); background:#fafbfc; }
+  tr:last-child td { border-bottom:none; }
+  code, .mono { font-family:var(--ac-font-mono); font-size:12px; }
+  .sw { display:inline-block; width:36px; height:22px; border-radius:6px; border:1px solid rgba(31,35,40,.12); vertical-align:middle; }
+  .pass { color:var(--ac-color-success); font-weight:600; }
+  .type-row { background:#fff; border:1px solid var(--ac-color-border); border-radius:12px; padding:18px 22px; display:flex; flex-direction:column; gap:14px; }
+  .type-row > div { display:flex; align-items:baseline; gap:18px; }
+  .type-row .lab { font:500 10.5px/1 var(--ac-font-mono); letter-spacing:.06em; text-transform:uppercase; color:var(--ac-color-text-muted); width:150px; flex:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">docs/design · visual ground truth</div>
+  <h1>Styleguide — “command palette, daylight edition”</h1>
+  <p class="lede">Light, cool-toned developer-tool aesthetic. Identity from GitHub's own vernacular
+    (logins, <code>owner/repo</code> paths in monospace), one accent — merge purple. Full token
+    table with rationale in <code>design-tokens.md</code>; this page is the visual proof.</p>
+
+  <h2>Color — component API (<code>--ac-*</code>)</h2>
+  <table>
+    <tr><th>swatch</th><th>token</th><th>value</th><th>role</th><th>contrast on surface</th></tr>
+    <tr><td><span class="sw" style="background:#1f2328"></span></td><td class="mono">--ac-color-text</td><td class="mono">#1F2328</td><td>primary text</td><td class="pass">16.1:1 AAA</td></tr>
+    <tr><td><span class="sw" style="background:#59636e"></span></td><td class="mono">--ac-color-text-muted</td><td class="mono">#59636E</td><td>meta text</td><td class="pass">4.9:1 AA</td></tr>
+    <tr><td><span class="sw" style="background:#6639ba"></span></td><td class="mono">--ac-color-accent</td><td class="mono">#6639BA</td><td>focus ring, match echo, highlight bar</td><td class="pass">7.1:1 AA(A)</td></tr>
+    <tr><td><span class="sw" style="background:#f5f1fb"></span></td><td class="mono">--ac-color-highlight</td><td class="mono">#F5F1FB</td><td>highlighted row bg</td><td class="pass">text 15:1 · muted 4.6:1</td></tr>
+    <tr><td><span class="sw" style="background:#d1d9e0"></span></td><td class="mono">--ac-color-border</td><td class="mono">#D1D9E0</td><td>borders (decorative)</td><td>n/a — focus uses accent ring</td></tr>
+    <tr><td><span class="sw" style="background:#cf222e"></span></td><td class="mono">--ac-color-danger</td><td class="mono">#CF222E</td><td>error state</td><td class="pass">4.7:1 AA</td></tr>
+    <tr><td><span class="sw" style="background:#9a6700"></span></td><td class="mono">--ac-color-warning</td><td class="mono">#9A6700</td><td>rate-limit state</td><td class="pass">4.6:1 AA</td></tr>
+    <tr><td><span class="sw" style="background:#fff8c5"></span></td><td class="mono">--ac-color-warning-bg</td><td class="mono">#FFF8C5</td><td>rate-limit callout bg</td><td class="pass">ink on it 13.9:1</td></tr>
+    <tr><td><span class="sw" style="background:#1a7f37"></span></td><td class="mono">--ac-color-success</td><td class="mono">#1A7F37</td><td>status ok</td><td class="pass">5.0:1 AA</td></tr>
+    <tr><td><span class="sw" style="background:#0f766e"></span></td><td class="mono">(theme override demo)</td><td class="mono">#0F766E</td><td>country instance accent</td><td class="pass">5.4:1 AA</td></tr>
+  </table>
+
+  <h2>Type</h2>
+  <div class="type-row">
+    <div><span class="lab">display · demo only</span><span style="font-family:'Space Grotesk';font-weight:600;font-size:26px">One autocomplete, any data.</span></div>
+    <div><span class="lab">ui · --ac-font-ui</span><span style="font-size:15px">System stack — the component imposes no font loading on its host.</span></div>
+    <div><span class="lab">item name · 14/500</span><span style="font-size:14px;font-weight:500">react <span class="mono" style="color:#59636e">facebook/react</span></span></div>
+    <div><span class="lab">meta · 12.5</span><span style="font-size:12.5px;color:#59636e">The library for web and native user interfaces</span></div>
+    <div><span class="lab">mono · --ac-font-mono</span><span class="mono">@reactjs · owner/repo · 50 of 1,204 · sorted A→Z</span></div>
+  </div>
+
+  <h2>Rules of the system</h2>
+  <table>
+    <tr><th>#</th><th>rule</th></tr>
+    <tr><td>1</td><td>One accent. Merge purple carries focus, match echo, and the highlight bar — nothing else is purple.</td></tr>
+    <tr><td>2</td><td>Monospace = identifier. Logins, repo paths, and the contract footer only; never body text.</td></tr>
+    <tr><td>3</td><td>Kind is never encoded by color alone: shape (circle avatar vs <code>{ }</code> tile) + mono path + KIND column.</td></tr>
+    <tr><td>4</td><td>The dropdown footer narrates the contract (min chars, cap, sort, keys) — signature element, present in every open state.</td></tr>
+    <tr><td>5</td><td>Motion: one 120ms dropdown entrance + loading pulse, both behind <code>prefers-reduced-motion</code>.</td></tr>
+    <tr><td>6</td><td>Component styles only via <code>--ac-*</code> custom properties with baked-in fallbacks; demo canvas styling never leaks into the component.</td></tr>
+  </table>
+</div>
+</body>
+</html>

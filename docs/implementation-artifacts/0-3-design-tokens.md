@@ -1,6 +1,10 @@
+---
+baseline_commit: 31b205e7b3b8503a3acc3836f70f3fff6b3aef40
+---
+
 # Story 0.3: Design tokens as `--ac-*` custom properties
 
-Status: Approved
+Status: Review
 
 ## Story
 
@@ -31,8 +35,8 @@ piercing selectors.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Create the token reference (AC: 1, 2, 3, 5)
-  - [ ] Create `src/lib/autocomplete/tokens.css` declaring every `--ac-*` custom property with its
+- [x] Task 1 — Create the token reference (AC: 1, 2, 3, 5)
+  - [x] Create `src/lib/autocomplete/tokens.css` declaring every `--ac-*` custom property with its
         design value as the value, under a **`@layer`-neutral, non-global scope**. Per AR-5, the
         canonical consumption is `var(--ac-*, <fallback>)` inside `Autocomplete.module.css` (Epic 1),
         so `tokens.css` is the **documented source of the fallbacks**, not a global reset. If declaring
@@ -41,21 +45,21 @@ piercing selectors.
         directly into the module CSS in Epic 1 — **follow AR-5's exact guidance: the fallbacks baked
         into the component CSS are the design values, so the component is fully styled in an unstyled
         host.** Record the chosen approach in the README. [Source: architecture.md#AR-5, epics.md#Story 0.3]
-  - [ ] Add TSDoc/CSS comments next to each token: name, purpose, fallback (per epics §Technical
+  - [x] Add TSDoc/CSS comments next to each token: name, purpose, fallback (per epics §Technical
         notes — documentation is a table in story docs + comments next to the CSS).
         [Source: epics.md#Story 0.3 Technical notes]
-- [ ] Task 2 — Bake the exact values from `docs/design/design-tokens.md` (AC: 2, 3)
-  - [ ] Copy the **Color**, **Typography**, and **Spacing & shape** token values **verbatim** (see the
+- [x] Task 2 — Bake the exact values from `docs/design/design-tokens.md` (AC: 2, 3)
+  - [x] Copy the **Color**, **Typography**, and **Spacing & shape** token values **verbatim** (see the
         table in Dev Notes below — do **not** invent or round values). [Source: design-tokens.md]
-  - [ ] Confirm the focus-ring token exists and is the accent color used as a **2px accent focus ring
+  - [x] Confirm the focus-ring token exists and is the accent color used as a **2px accent focus ring
         with 2px offset** (per design-tokens.md A11y baseline). [Source: design-tokens.md#A11y baseline]
-- [ ] Task 3 — Verify contrast + no leakage (AC: 3, 5)
-  - [ ] Confirm the documented AA contrast rationale from `design-tokens.md` holds for the baked
+- [x] Task 3 — Verify contrast + no leakage (AC: 3, 5)
+  - [x] Confirm the documented AA contrast rationale from `design-tokens.md` holds for the baked
         values (text 16.1:1, muted 4.9:1, accent 7.1:1, danger 4.7:1, warning 4.6:1 on surface — all
         AA/AAA as noted). No new global styles; nothing applied to `body`/`html`.
         [Source: design-tokens.md#Color, prd.md#NFR-1, #NFR-5]
-- [ ] Task 4 — Documentation deliverable (Definition of Done) (AC: 4)
-  - [ ] Create `docs/features/epic-0-foundation/0-3-design-tokens/README.md` with the full token table
+- [x] Task 4 — Documentation deliverable (Definition of Done) (AC: 4)
+  - [x] Create `docs/features/epic-0-foundation/0-3-design-tokens/README.md` with the full token table
         (name / purpose / fallback) — this is the section Story 3.3's README/lib README reuses. **No
         MANUAL_TESTING.md** (no rendered UI yet). PERFORMANCE.md is **not applicable**.
         [Source: CLAUDE.md, epics.md#Story 0.3]
@@ -170,14 +174,78 @@ theming instance (Epic 3, Story 3.1). This story only establishes the token cont
 
 ### Agent Model Used
 
+Claude Fable 5 (claude-fable-5)
+
 ### Debug Log References
+
+- `?raw` CSS import returns an empty string under Vitest 4 (jsdom, default `css: false`), so
+  `tokens.test.ts` reads `tokens.css` via `node:fs` from the vitest root instead. Node types are
+  scoped to the test file with a `/// <reference types="node" />` directive rather than adding
+  `node` to `tsconfig.app.json` types (keeps Node globals out of app/lib source).
+
+### Implementation Plan
+
+1. Branch `story/0-3-design-tokens` from master (baseline `31b205e`).
+2. RED: `src/lib/autocomplete/tokens.test.ts` pinning every `--ac-*` name/value verbatim to
+   `docs/design/design-tokens.md`, asserting the focus-ring recipe is documented, computing WCAG
+   contrast ratios for AC 3, and asserting no global selectors / custom-properties-only for AC 5.
+3. GREEN: `src/lib/autocomplete/tokens.css` — 18 tokens scoped to `.acRoot`, one comment per token.
+4. Docs: `docs/features/epic-0-foundation/0-3-design-tokens/README.md` with the full token table.
+5. Verify: `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e`, then the pre-PR review gate.
 
 ### Completion Notes List
 
+- Created `src/lib/autocomplete/tokens.css`: all 18 `--ac-*` tokens (10 color, 2 typography,
+  6 spacing/shape) copied verbatim from `docs/design/design-tokens.md`, declared under the
+  documented `.acRoot` wrapper class (spec-authorized alternative to `:root` — nothing leaks into
+  the host). File contains only custom-property declarations; per AR-5 the canonical consumption
+  remains `var(--ac-x, <fallback>)` baked into `Autocomplete.module.css` in Epic 1, with this file
+  as the documented source of those fallbacks. Approach recorded in the feature README.
+- Contract is test-pinned (33 tests): exact name/value equality, no undocumented tokens, naming
+  convention, focus-ring token + 2px/2px recipe documented, **computed** WCAG contrast ratios
+  (text AAA; muted/accent/danger/warning/success AA on surface; accent ≥3:1 non-text; text on
+  warning-bg AAA; text/muted/accent AA on highlight), no `:root`/`html`/`body`/`*` selectors,
+  custom-property-only declarations.
+- No motion tokens added (per spec — Epic 1 implementation detail).
+- Verification: `pnpm lint`, `pnpm typecheck`, `pnpm test` (36 tests, 4 files), `pnpm test:e2e`
+  (1 spec) — all green.
+
+### Pre-PR review gate (security review + codex second pass + triage)
+
+- **Security review** (/security-review over the story diff): no findings — static CSS custom
+  properties, a test-only file reading a hardcoded local path, and documentation; no attack surface.
+- **Codex-rescue second-pass review**: 4 findings, each triaged empirically:
+  1. *Medium — "tests assert AA thresholds instead of pinning the documented ratios (16.1, 4.9,
+     7.1, 4.7, 4.6)."* **Rejected with evidence:** computing the WCAG 2.x ratios for the baked
+     values shows the design doc's decimals are approximations that do not hold exactly (muted
+     `#59636E` on `#FFFFFF` computes to 6.1:1, not 4.9:1; text 15.8:1, not 16.1:1; danger 5.4:1,
+     not 4.7:1 — all at or above their documented class). Pinning those figures would encode
+     incorrect numbers; the tests pin the actual guarantee (AA/AAA thresholds). Documented in the
+     feature README.
+  2. *Medium — "global-selector regex misses `:where(body)` / `:is(:root)`."* **False positive in
+     effect:** the stricter companion test requires every selector to equal `.acRoot` exactly.
+     Verified empirically — appending `:where(body) { --ac-color-surface: #000; }` to tokens.css
+     fails 2 tests; reverting returns 33/33 green.
+  3. *Medium — "plain stylesheet with global `.acRoot` class violates AR-5 'CSS Modules only'."*
+     **Spec-authorized deviation:** story Task 1 explicitly offers scoping to a documented wrapper
+     class (e.g. `.acRoot`) as the non-global alternative to `:root`. Additionally, no module
+     imports tokens.css at this stage (verified by grep), so nothing ships to the host at all.
+     Trade-off now recorded explicitly in the feature README and the file header.
+  4. *Low — "docs overstate 'leaks nothing into the host'."* **Accepted — fixed:** tokens.css
+     header and feature README reworded to state the two actual safeguards (not imported; even if
+     imported, custom-property-only declarations under a class the host does not use).
+- Re-verified after the wording fixes: lint, typecheck, unit, e2e — all green.
+
 ### File List
+
+- `src/lib/autocomplete/tokens.css` — NEW
+- `src/lib/autocomplete/tokens.test.ts` — NEW
+- `docs/features/epic-0-foundation/0-3-design-tokens/README.md` — NEW
+- `docs/implementation-artifacts/0-3-design-tokens.md` — UPDATE (frontmatter, checkboxes, Dev Agent Record, status)
 
 ## Change Log
 
 | Date | Version | Description | Author |
 |---|---|---|---|
 | 2026-07-09 | 0.1 | Initial draft — story approved, ready for dev | Scrum Master (bmad-create-story) |
+| 2026-07-09 | 1.0 | Implemented: tokens.css + contract tests + feature README; all verification green | Dev (bmad-dev-story) |

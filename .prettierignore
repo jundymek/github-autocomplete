@@ -1,0 +1,9 @@
+docs/
+CLAUDE.md
+pnpm-lock.yaml
+dist/
+coverage/
+node_modules/
+_bmad/
+.claude/
+.superpowers/

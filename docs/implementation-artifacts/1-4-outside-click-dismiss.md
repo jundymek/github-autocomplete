@@ -4,7 +4,7 @@ baseline_commit: eb59242b22782d12a52bbeb06577fa09af4f8778
 
 # Story 1.4: Outside-click / focus-loss dismissal for the `Autocomplete<T>` dropdown
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

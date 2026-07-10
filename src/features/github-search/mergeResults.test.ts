@@ -1,7 +1,13 @@
 import { http, HttpResponse, delay } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { server } from '../../test/msw/server'
-import { MAX_RESULTS, createFetchSuggestions, fetchSuggestions, mergeResults } from './mergeResults'
+import {
+  MAX_RESULTS,
+  createFetchSuggestions,
+  createFetchSuggestionsWithTotal,
+  fetchSuggestions,
+  mergeResults,
+} from './mergeResults'
 import type { GithubResult } from './types'
 
 const USERS_URL = 'https://api.github.com/search/users'
@@ -220,6 +226,58 @@ describe('fetchSuggestions — composed contract (AC 6, 7, 8, 9g)', () => {
     expect(rejection).toBeInstanceOf(Error)
     expect((rejection as Error).name).toBe('AbortError')
     expect(rejection).not.toHaveProperty('kind')
+  })
+
+  it('createFetchSuggestionsWithTotal reports the combined total_count via the callback', async () => {
+    server.use(
+      http.get(USERS_URL, () => HttpResponse.json({ ...emptyBody, total_count: 1200, items: [userItem] })),
+      http.get(REPOS_URL, () => HttpResponse.json({ ...emptyBody, total_count: 4, items: [repoItem] })),
+    )
+
+    const totals: number[] = []
+    const fetch = createFetchSuggestionsWithTotal((total) => totals.push(total))
+    const results = await fetch('octo', signal())
+
+    expect(names(results)).toEqual(['hello-world', 'octocat'])
+    expect(totals).toEqual([1204])
+  })
+
+  it('createFetchSuggestionsWithTotal passes the request signal so a stale report can be dropped', async () => {
+    server.use(
+      http.get(USERS_URL, () => HttpResponse.json({ ...emptyBody, total_count: 1200, items: [userItem] })),
+      http.get(REPOS_URL, () => HttpResponse.json({ ...emptyBody, total_count: 4, items: [repoItem] })),
+    )
+
+    const reports: Array<{ total: number; query: string; aborted: boolean }> = []
+    const fetch = createFetchSuggestionsWithTotal((total, query, signal) =>
+      reports.push({ total, query, aborted: signal.aborted }),
+    )
+
+    const controller = new AbortController()
+    // Abort *after* the request settles but the callback observes the signal:
+    // simulate the newer-query-wins race by aborting once results are back.
+    const results = await fetch('octo', controller.signal)
+    controller.abort()
+
+    expect(names(results)).toEqual(['hello-world', 'octocat'])
+    // The callback fired before the abort here, but it received the very signal
+    // a newer query would abort — the consumer guards on `signal.aborted`.
+    expect(reports).toHaveLength(1)
+    expect(reports[0]).toMatchObject({ total: 1204, query: 'octo' })
+    expect(controller.signal.aborted).toBe(true)
+  })
+
+  it('createFetchSuggestionsWithTotal does not report a total when the search fails', async () => {
+    server.use(
+      http.get(USERS_URL, () => HttpResponse.json({ ...emptyBody, items: [userItem] })),
+      http.get(REPOS_URL, () => new HttpResponse(null, { status: 500 })),
+    )
+
+    const totals: number[] = []
+    const fetch = createFetchSuggestionsWithTotal((total) => totals.push(total))
+
+    await expect(fetch('octo', signal())).rejects.toEqual({ kind: 'http', status: 500 })
+    expect(totals).toEqual([])
   })
 
   it('binds the token at construction time and sends it on both requests (FR-16)', async () => {

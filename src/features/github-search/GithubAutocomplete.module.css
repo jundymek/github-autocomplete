@@ -1,0 +1,60 @@
+/*
+ * GitHub-specific item chrome for `renderItem` (design state 04).
+ *
+ * The generic lib supplies the row grid (`28px 1fr auto`), highlight
+ * background and accent bar (Autocomplete.module.css `.item`); this module only
+ * styles the *content* the adapter injects into each cell. It reads the same
+ * `--ac-*` tokens (with the design fallbacks) so it themes in lockstep with the
+ * lib without importing lib styles across the AR-2 boundary.
+ */
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #c9b7ec, #8fb0d9);
+  background-size: cover;
+  background-position: center;
+}
+
+.repoicon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #eef1f6;
+  display: grid;
+  place-items: center;
+  color: var(--ac-color-text-muted, #59636e);
+  font: 500 13px/1 var(--ac-font-mono, ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, monospace);
+}
+
+.name {
+  font: 500 14px/1.35 var(--ac-font-ui, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
+  color: var(--ac-color-text, #1f2328);
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.path {
+  font: 400 12.5px/1 var(--ac-font-mono, ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, monospace);
+  color: var(--ac-color-text-muted, #59636e);
+}
+
+/* Query-match echo. `background: none` so the accent color is the only signal. */
+.mark {
+  background: none;
+  color: var(--ac-color-accent, #6639ba);
+  font-weight: 600;
+}
+
+.kind {
+  font: 500 10.5px/1 var(--ac-font-mono, ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, monospace);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ac-color-text-muted, #59636e);
+  align-self: start;
+  padding-top: 3px;
+}

@@ -7,6 +7,7 @@
 
 import type {
   ChangeEvent as ReactChangeEvent,
+  FocusEvent as ReactFocusEvent,
   KeyboardEvent as ReactKeyboardEvent,
   MouseEvent as ReactMouseEvent,
   ReactNode,
@@ -87,6 +88,13 @@ export type AutocompleteInputProps = {
   value: string
   onChange: (event: ReactChangeEvent<HTMLInputElement>) => void
   onKeyDown: (event: ReactKeyboardEvent<HTMLInputElement>) => void
+  /**
+   * Reopens the dropdown when focus returns to an input that still holds a
+   * qualifying query whose results are already fetched (`success`/`empty`/
+   * `error`) but was closed. Never refetches; a no-op otherwise (idle, below
+   * threshold, loading, or already open).
+   */
+  onFocus: (event: ReactFocusEvent<HTMLInputElement>) => void
 }
 
 /** Props emitted by `getListboxProps()` for the popup list element. */

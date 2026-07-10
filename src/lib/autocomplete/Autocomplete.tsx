@@ -347,7 +347,12 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
         placeholder={placeholder}
         aria-label={label}
         onKeyDown={onKeyDown}
-        onFocus={() => setIsFocused(true)}
+        onFocus={(event) => {
+          // Compose the hook's reopen-on-focus (results) with the component's
+          // own focus flag (drives the below-threshold hint). Both must run.
+          inputProps.onFocus(event)
+          setIsFocused(true)
+        }}
         onBlur={() => setIsFocused(false)}
       />
       {state.status === 'loading' && (

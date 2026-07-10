@@ -185,6 +185,22 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>): UseAutoc
     setState((prev) => ({ ...prev, isOpen: false, highlightedIndex: null }))
   }, [clearDebounceTimer, abortInFlight])
 
+  const openIfResults = useCallback(() => {
+    // Reopen-on-focus (1.5): show already-fetched results again without a new
+    // request. Only when a settled results state exists for the current
+    // qualifying query and the dropdown is closed. Never fetches, never
+    // touches the debounce/highlight. Idle, below-threshold, loading, and
+    // already-open all fall through as no-ops.
+    setState((prev) => {
+      if (prev.isOpen) return prev
+      if (prev.query.length < minChars) return prev
+      if (prev.status !== 'success' && prev.status !== 'empty' && prev.status !== 'error') {
+        return prev
+      }
+      return { ...prev, isOpen: true }
+    })
+  }, [minChars])
+
   // --- Ids (AC 7): stable per-instance base; option ids derive from getItemKey.
   const baseId = useId()
   const listboxId = `${baseId}-listbox`
@@ -280,8 +296,9 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>): UseAutoc
       value: query,
       onChange: (event: ReactChangeEvent<HTMLInputElement>) => onInputChange(event.target.value),
       onKeyDown,
+      onFocus: openIfResults,
     }
-  }, [state, listboxId, optionId, onInputChange, onKeyDown])
+  }, [state, listboxId, optionId, onInputChange, onKeyDown, openIfResults])
 
   const getListboxProps = useCallback(
     (): AutocompleteListboxProps => ({ role: 'listbox', id: listboxId }),

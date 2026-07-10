@@ -126,6 +126,12 @@ navigation/selection keys still route exclusively through the hook (§3.4).
 [Story 1.4](../1-4-outside-click-dismiss/) — on an outside pointer press (a `pointerdown` outside
 both the component root and the portalled popup). All three keep the typed query in the input.
 
+**Reopen on focus.** Added in [Story 1.5](../1-5-reopen-on-focus/): focusing (click or Tab) an
+input that still holds a qualifying query whose results were already fetched — but was closed —
+reopens the dropdown with those existing results and **fires no new request**. Focus is a no-op when
+nothing has been fetched (idle), the query is below `minChars`, a fetch is in flight, or the dropdown
+is already open.
+
 ## Live region
 
 A visually-hidden `role="status"` / `aria-live="polite"` element rendered in the input's normal

@@ -270,4 +270,126 @@ describe('useAutocomplete', () => {
     expect(result.current.state.highlightedIndex).toBeNull()
     expect(result.current.state.query).toBe('rea')
   })
+
+  describe('reopen-on-focus (Story 1.5)', () => {
+    /** Fires the focus handler exposed on the input prop getter. */
+    function focus(result: { current: ReturnType<typeof useAutocomplete<Item>> }) {
+      const onFocus = result.current.handlers.getInputProps().onFocus
+      act(() => onFocus?.({} as never))
+    }
+
+    it('reopens a closed success dropdown on focus without refetching', async () => {
+      const items: Item[] = [{ id: '1', label: 'react' }]
+      const fetchSuggestions = vi.fn(() => Promise.resolve(items))
+      const { result } = renderHook(() =>
+        useAutocomplete<Item>({ ...baseOptions, fetchSuggestions }),
+      )
+
+      act(() => result.current.handlers.onInputChange('rea'))
+      await act(() => vi.advanceTimersByTimeAsync(DEBOUNCE_MS))
+      expect(result.current.state.status).toBe('success')
+      act(() => result.current.handlers.close())
+      expect(result.current.state.isOpen).toBe(false)
+      expect(fetchSuggestions).toHaveBeenCalledTimes(1)
+
+      focus(result)
+
+      expect(result.current.state.isOpen).toBe(true)
+      expect(result.current.state.items).toEqual(items)
+      expect(result.current.state.highlightedIndex).toBeNull()
+      // No new request on reopen.
+      expect(fetchSuggestions).toHaveBeenCalledTimes(1)
+    })
+
+    it('reopens empty and error result states on focus without refetching', async () => {
+      // empty
+      const emptyFetch = vi.fn(() => Promise.resolve<Item[]>([]))
+      const empty = renderHook(() => useAutocomplete<Item>({ ...baseOptions, fetchSuggestions: emptyFetch }))
+      act(() => empty.result.current.handlers.onInputChange('zzz'))
+      await act(() => vi.advanceTimersByTimeAsync(DEBOUNCE_MS))
+      expect(empty.result.current.state.status).toBe('empty')
+      act(() => empty.result.current.handlers.close())
+      focus(empty.result)
+      expect(empty.result.current.state.isOpen).toBe(true)
+      expect(emptyFetch).toHaveBeenCalledTimes(1)
+
+      // error
+      const errFetch = vi.fn(() => Promise.reject(new Error('boom')))
+      const err = renderHook(() => useAutocomplete<Item>({ ...baseOptions, fetchSuggestions: errFetch }))
+      act(() => err.result.current.handlers.onInputChange('rea'))
+      await act(() => vi.advanceTimersByTimeAsync(DEBOUNCE_MS))
+      expect(err.result.current.state.status).toBe('error')
+      act(() => err.result.current.handlers.close())
+      focus(err.result)
+      expect(err.result.current.state.isOpen).toBe(true)
+      expect(errFetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not open on focus when idle (nothing fetched) and fires no request', () => {
+      const fetchSuggestions = vi.fn(() => Promise.resolve<Item[]>([]))
+      const { result } = renderHook(() =>
+        useAutocomplete<Item>({ ...baseOptions, fetchSuggestions }),
+      )
+
+      expect(result.current.state.status).toBe('idle')
+      focus(result)
+
+      expect(result.current.state.isOpen).toBe(false)
+      expect(fetchSuggestions).not.toHaveBeenCalled()
+    })
+
+    it('does not open the results listbox on focus when the query is below minChars', async () => {
+      const fetchSuggestions = vi.fn(() => Promise.resolve<Item[]>([]))
+      const { result } = renderHook(() =>
+        useAutocomplete<Item>({ ...baseOptions, fetchSuggestions }),
+      )
+
+      act(() => result.current.handlers.onInputChange('re')) // below 3
+      await act(() => vi.advanceTimersByTimeAsync(DEBOUNCE_MS))
+      expect(result.current.state.status).toBe('idle')
+
+      focus(result)
+
+      expect(result.current.state.isOpen).toBe(false)
+      expect(fetchSuggestions).not.toHaveBeenCalled()
+    })
+
+    it('is a no-op on focus while a fetch is in flight (loading) — no second request', async () => {
+      const deferred = createDeferred<Item[]>()
+      const fetchSuggestions = vi.fn(() => deferred.promise)
+      const { result } = renderHook(() =>
+        useAutocomplete<Item>({ ...baseOptions, fetchSuggestions }),
+      )
+
+      act(() => result.current.handlers.onInputChange('rea'))
+      await act(() => vi.advanceTimersByTimeAsync(DEBOUNCE_MS))
+      expect(result.current.state.status).toBe('loading')
+
+      focus(result)
+
+      expect(result.current.state.status).toBe('loading')
+      expect(fetchSuggestions).toHaveBeenCalledTimes(1)
+    })
+
+    it('is a no-op on focus while already open — does not change highlight or refetch', async () => {
+      const items: Item[] = [{ id: '1', label: 'react' }, { id: '2', label: 'redux' }]
+      const fetchSuggestions = vi.fn(() => Promise.resolve(items))
+      const { result } = renderHook(() =>
+        useAutocomplete<Item>({ ...baseOptions, fetchSuggestions }),
+      )
+
+      act(() => result.current.handlers.onInputChange('re'.padEnd(3, 'a')))
+      await act(() => vi.advanceTimersByTimeAsync(DEBOUNCE_MS))
+      expect(result.current.state.isOpen).toBe(true)
+      // Highlight an option, then refocus while open.
+      act(() => result.current.handlers.onKeyDown({ key: 'ArrowDown', preventDefault() {} } as never))
+      expect(result.current.state.highlightedIndex).toBe(0)
+
+      focus(result)
+
+      expect(result.current.state.isOpen).toBe(true)
+      expect(result.current.state.highlightedIndex).toBe(0)
+      expect(fetchSuggestions).toHaveBeenCalledTimes(1)
+    })
+  })
 })

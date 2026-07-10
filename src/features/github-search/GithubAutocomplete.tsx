@@ -139,17 +139,35 @@ export function renderGithubItem(item: GithubResult, query: string): ReactNode {
       </span>
     )
 
+  // KIND label: organizations read "org"; users and repos keep their kind.
+  const kindLabel = item.isOrganization ? 'org' : item.kind
+
+  // "matches profile" hint: for user/org rows, when the query is not a
+  // substring of the visible login, the match must be on a hidden profile
+  // field (name/bio) the search API does not return — so we say so, turning an
+  // apparently-random hit into an explained one. When the login does contain
+  // the query, the <mark> highlight already shows it, so no hint is needed.
+  const trimmedQuery = query.trim()
+  const matchesProfile =
+    item.kind === 'user' &&
+    trimmedQuery !== '' &&
+    !item.name.toLowerCase().includes(trimmedQuery.toLowerCase())
+
   return (
     <>
       {icon}
       <span className={styles.name}>
         <span>{highlightMatch(item.name, query)}</span>
         {item.kind === 'repo' && <span className={styles.path}>{item.displayPath}</span>}
+        {matchesProfile && <span className={styles.secondary}>{MATCHES_PROFILE_HINT}</span>}
       </span>
-      <span className={styles.kind}>{item.kind}</span>
+      <span className={styles.kind}>{kindLabel}</span>
     </>
   )
 }
+
+/** Copy shown when a user matched on a hidden profile field, not the login. */
+const MATCHES_PROFILE_HINT = 'matches profile'
 
 /**
  * Splits `text` around the first case-insensitive occurrence of `query`,

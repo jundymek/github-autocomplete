@@ -43,6 +43,22 @@
   color: var(--ac-color-text-muted, #59636e);
 }
 
+/*
+ * User "matches profile" hint line (shown when the query matched a hidden
+ * profile field, not the login). Muted, UI font, truncated with an ellipsis so
+ * it can never break the row. Basis 100% pushes it onto its own line under the
+ * login within the wrapping `.name` flex row, mirroring the repo path.
+ */
+.secondary {
+  flex-basis: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 400 12.5px/1.2 var(--ac-font-ui, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
+  color: var(--ac-color-text-muted, #59636e);
+}
+
 /* Query-match echo. `background: none` so the accent color is the only signal. */
 .mark {
   background: none;

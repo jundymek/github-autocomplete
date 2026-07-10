@@ -132,7 +132,7 @@ function mapItems(body: unknown, mapItem: (item: unknown) => GithubResult | unde
 
 function mapUserItem(item: unknown): GithubResult | undefined {
   if (!isRecord(item)) return undefined
-  const { id, login, html_url: htmlUrl, avatar_url: avatarUrl } = item
+  const { id, login, html_url: htmlUrl, avatar_url: avatarUrl, type } = item
   if (!isId(id) || typeof login !== 'string' || typeof htmlUrl !== 'string') return undefined
   return {
     kind: 'user',
@@ -140,6 +140,10 @@ function mapUserItem(item: unknown): GithubResult | undefined {
     name: login,
     displayPath: login,
     description: undefined,
+    // `type` is present in the search response ("User" | "Organization"); a
+    // missing/odd value defaults to a regular user. The profile name/bio are
+    // NOT in the search response, so they cannot be surfaced here.
+    isOrganization: type === 'Organization',
     avatarUrl: optionalString(avatarUrl),
     htmlUrl,
   }
@@ -162,6 +166,7 @@ function mapRepoItem(item: unknown): GithubResult | undefined {
     name,
     displayPath: fullName,
     description: optionalString(description),
+    isOrganization: false,
     avatarUrl: optionalString(isRecord(owner) ? owner.avatar_url : undefined),
     htmlUrl,
   }

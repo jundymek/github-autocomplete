@@ -52,18 +52,41 @@ layer; AR-12; NFR-1).
    the suite locally and in the Node-22 + pnpm CI job (browsers cached). Only browser-real behaviors
    live in `/e2e`; pure logic and component behavior stay in the Vitest/RTL layers per architecture
    §3.6.
+9. **Outside-pointer press closes the open dropdown (Story 1.4, browser-real).** After results
+   render, a `pointerdown`/click on the page **outside** both the component and the portalled popup
+   closes the dropdown (`aria-expanded="false"`), keeping the query text in the input — while a click
+   **inside** the popup (an option) still selects (already covered by AC 3). This is a genuinely
+   browser-real dismissal path (portal + document-level listener) that RTL only approximates; assert
+   it thinly (one open→outside-click→closed case). Do **not** re-test the hook's close semantics here.
+   [Source: docs/implementation-artifacts/1-4-outside-click-dismiss.md]
+10. **Reopen-on-focus shows existing results with NO new request (Story 1.5, browser-real).** After
+    results render and the dropdown is closed (Escape or outside-click) with the query retained,
+    re-focusing the input reopens the dropdown with the same options — and, crucially, **fires no new
+    GitHub request**. This is asserted with the existing `page.route` interception by counting matched
+    requests: the count is unchanged across the close→refocus cycle. Also assert that focusing a
+    fresh/never-searched input opens nothing. (No-refetch is a browser-real guarantee that request
+    counting proves far more convincingly than RTL.) [Source: docs/implementation-artifacts/1-5-reopen-on-focus.md]
+11. **User rows reveal the match context; organizations are labeled (Story 1.6).** With a fixture whose
+    user items carry `name`/`bio` and a `type`, the rendered user row shows the display name (or bio)
+    secondary text, and an item with `type: "Organization"` reads `org` in the KIND column (not
+    `user`). At least one fixture user matches the query **only** via `name` (not the login) so the
+    highlighted match is visible in the secondary text. The A→Z sort assertion in AC 2 still holds
+    (secondary text does not change the sort key). [Source: docs/implementation-artifacts/1-6-user-match-context.md]
 
 ## Tasks / Subtasks
 
 - [ ] Task 1 — Playwright config + webServer (AC: 1, 8)
   - [ ] Ensure `playwright.config.ts` (from Story 0.2 harness) has a `webServer` reusing `pnpm dev` (or `pnpm preview` after `pnpm build`) with `reuseExistingServer: !process.env.CI`, the correct `baseURL`/port, and a reasonable timeout. Confirm `test:e2e` script exists.
   - [ ] Confirm `@axe-core/playwright` is installed (from 0.2); if not, add it as a devDependency.
-- [ ] Task 2 — Deterministic fixtures + route helper (AC: 1)
-  - [ ] `e2e/fixtures/github.ts`: export deterministic response bodies — a small users+repos set (with known `html_url`s and names to assert sort order), a 50-users + 50-repos payload, and a 403 rate-limit response (status 403, headers `x-ratelimit-remaining: 0`, `retry-after`, and a rate-limit body).
-  - [ ] `e2e/helpers/mockGithub.ts`: a helper that registers `page.route('https://api.github.com/search/users*', …)` and `…/search/repositories*` returning a chosen fixture. Reused by every spec so the real API is never called.
-- [ ] Task 3 — search + new-tab + focus specs (AC: 2, 3, 7)
-  - [ ] `e2e/newtab.spec.ts`: mock small fixture; type query; assert results render sorted (AC 2); ArrowDown×2 + Enter → `context.waitForEvent('page')`, assert `popup.url()` === expected `html_url`, and demo page state retained; a second case asserts mouse click opens the same URL.
+- [ ] Task 2 — Deterministic fixtures + route helper (AC: 1, 11)
+  - [ ] `e2e/fixtures/github.ts`: export deterministic response bodies — a small users+repos set (with known `html_url`s and names to assert sort order), a 50-users + 50-repos payload, and a 403 rate-limit response (status 403, headers `x-ratelimit-remaining: 0`, `retry-after`, and a rate-limit body). **User items must include `name`, `bio`, and `type` fields (Story 1.6):** include at least one `type: "Organization"` item and at least one user whose `login` does **not** contain the query but whose `name` does, so the by-name match/highlight can be asserted.
+  - [ ] `e2e/helpers/mockGithub.ts`: a helper that registers `page.route('https://api.github.com/search/users*', …)` and `…/search/repositories*` returning a chosen fixture. Reused by every spec so the real API is never called. Expose a way to **count** matched requests (e.g. increment a counter in the route handler) so the reopen-no-refetch assertion (AC 10) can verify the count is unchanged across a close→refocus cycle.
+- [ ] Task 3 — search + new-tab + focus specs (AC: 2, 3, 7, 11)
+  - [ ] `e2e/newtab.spec.ts`: mock small fixture; type query; assert results render sorted (AC 2); ArrowDown×2 + Enter → `context.waitForEvent('page')`, assert `popup.url()` === expected `html_url`, and demo page state retained; a second case asserts mouse click opens the same URL. **Also assert (AC 11)** a user row shows its display name/bio secondary text, an `org`-kind row is labeled `org`, and a name-only match highlights in the secondary text.
   - [ ] `e2e/focus.spec.ts`: assert the input keeps focus during ArrowUp/Down and after Escape (dropdown closes, query text remains).
+- [ ] Task 3b — dismissal + reopen specs (AC: 9, 10) — Stories 1.4 / 1.5
+  - [ ] `e2e/dismiss.spec.ts`: mock small fixture; open results; `pointerdown`/click on the page background (outside the component and popup); assert `aria-expanded="false"` and the query text is retained. Keep it to the outside-close path only (option-click selection is covered by AC 3); do not re-test the hook's close internals.
+  - [ ] `e2e/reopen.spec.ts` (or fold into `focus.spec.ts`): open results; close (Escape or outside-click); re-focus the input; assert the same options reappear with `aria-expanded="true"` **and the matched-request count from the route helper is unchanged** (no new GitHub request). Add a case: focusing a fresh (never-searched) input opens nothing.
 - [ ] Task 4 — rate-limit spec (AC: 4)
   - [ ] `e2e/ratelimit.spec.ts`: route to the 403 rate-limit fixture; type a qualifying query; assert the dedicated rate-limit message is visible and distinct from the generic error text.
 - [ ] Task 5 — clipping spec (AC: 6)
@@ -92,7 +115,12 @@ Part of Definition of Done (see CLAUDE.md). Create the task documentation folder
 
 **Prerequisite & dependencies.** Runs against the demo page from Story 3.1 (both instances rendered)
 and reuses the Playwright + `@axe-core/playwright` harness stood up in Story 0.2. Depends on 3.1 and
-the 0.2 harness. [Source: docs/planning-artifacts/epics.md#Story 3.2 / #Story 3.1 / #Story 0.2]
+the 0.2 harness. **Also depends on the follow-up behaviors merged after 3.1:** Story 1.4
+(outside-click dismissal), Story 1.5 (reopen-on-focus, no refetch), and Story 1.6 (user match-context
+name/bio + org label) — AC 9/10/11 and the fixture shape (name/bio/type) cover these. Implement 3.2
+only once 1.4/1.5/1.6 are merged, so the e2e reflects the shipped behavior.
+[Source: docs/planning-artifacts/epics.md#Story 3.2 / #Story 3.1 / #Story 0.2;
+docs/implementation-artifacts/1-4-outside-click-dismiss.md / 1-5-reopen-on-focus.md / 1-6-user-match-context.md]
 
 **Branch & PR.** `story/3-2-e2e-and-axe` → `master`, squash. Commit e.g.
 `test(3.2): add thin playwright e2e and axe scan`. **No AI attribution / no `Co-Authored-By`.** Codex
@@ -148,13 +176,19 @@ story to Pages config — a plain `pnpm dev`/`preview` at base `/` is correct he
 `reuseExistingServer: !process.env.CI`. [Source: architecture.md#AR-13, epics.md#Story 0.2 (harness)]
 
 **Keep it thin (SM-C1, §3.6).** Only browser-real behaviors belong here: new-tab, focus, clipping/scroll,
-axe, and the rate-limit *rendered* state. Do NOT re-test debounce/threshold/stale-cancellation/state
-transitions in e2e — those are covered by the Vitest+RTL integration layer (Epic 1/2). Adding them here
-would violate the counter-metric. [Source: architecture.md#3.6, prd.md#SM-C1, epics.md#Story 3.2]
+axe, the rate-limit *rendered* state, and the three follow-up behaviors that are genuinely
+browser-real — outside-pointer dismissal (1.4, portal + document listener), reopen-on-focus with
+request-count proof (1.5), and user match-context rendering (1.6). Do NOT re-test
+debounce/threshold/stale-cancellation/state transitions in e2e — those are covered by the Vitest+RTL
+integration layer (Epic 1/2), and 1.4/1.5 already have full RTL coverage; the e2e additions here are
+single thin assertions of the *browser-real* facet (portal dismissal; no-network-on-reopen), not a
+re-run of the hook logic. Adding logic-level tests would violate the counter-metric.
+[Source: architecture.md#3.6, prd.md#SM-C1, epics.md#Story 3.2]
 
 ### Project Structure Notes
 
-- Specs in `e2e/`: `newtab.spec.ts`, `focus.spec.ts`, `ratelimit.spec.ts`, `clipping.spec.ts`,
+- Specs in `e2e/`: `newtab.spec.ts`, `focus.spec.ts`, `dismiss.spec.ts`, `reopen.spec.ts`
+  (the last two may fold into `focus.spec.ts` if kept thin), `ratelimit.spec.ts`, `clipping.spec.ts`,
   `a11y.spec.ts`; fixtures under `e2e/fixtures/`, helpers under `e2e/helpers/`.
   [Source: architecture.md#3.2 (e2e top-level) / #3.6 (e2e flows)]
 - `playwright.config.ts` at repo root (from 0.2). CI stage `playwright test` from `ci.yml`.
@@ -182,3 +216,4 @@ would violate the counter-metric. [Source: architecture.md#3.6, prd.md#SM-C1, ep
 
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
+| 2026-07-10 | 1.1 | Added AC 9/10/11 and Task 3b + fixture updates to cover the follow-up behaviors merged after 3.1: outside-click dismissal (1.4), reopen-on-focus with no-refetch request-count proof (1.5), and user match-context name/bio + org label (1.6). Marked 1.4/1.5/1.6 as implementation prerequisites. | Łukasz (follow-up sync) |

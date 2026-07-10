@@ -54,6 +54,14 @@
 2. **Expected:** the two panels stack into a single column; the layout stays readable with no
    horizontal page scroll.
 
+### 6. Panel badge does not overlap the title (narrow panels)
+
+1. Narrow the viewport to a phone width (e.g. 375px).
+2. **Expected:** each panel's badge (`instance 01`, `instance 02 · same core`) sits on its own line
+   **above** the title, not overlapping it. The title ("GitHub users & repositories" / "Country
+   picker") uses the full panel width. (On wider panels the badge stays in the top-right corner and
+   the title text is inset so it never slides under the badge.)
+
 ## Accessibility checks
 
 - **Keyboard:** both instances are fully operable from the keyboard — Tab into the input, type,
@@ -84,5 +92,7 @@ inspected. Results:
   `window.open` was not called. ✅
 - **Mobile ≤860px** (@800px): `.stage` collapses to a single column (both panels share x, stacked
   vertically); no horizontal page overflow. ✅
+- **Badge overlap** (@375px / @480px): badge drops into flow above the title, no overlap; @800px the
+  badge stays top-right and the title text does not slide under it. ✅
 - **Footer:** "source on github" links to the repo (same tab); "docs/planning-artifacts" renders as
   plain text (no dead link). ✅

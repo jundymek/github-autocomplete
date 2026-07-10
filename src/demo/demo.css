@@ -130,6 +130,10 @@ header p.lede code {
   font-family: var(--demo-display);
   font-weight: 500;
   font-size: 19px;
+  /* Reserve the top-right lane for the absolutely-positioned badge so a long
+     title (e.g. "GitHub users & repositories") never slides under it on narrow
+     panels. Width tracks the widest badge ("instance 02 · same core"). */
+  padding-right: 148px;
 }
 
 .panel .sub {
@@ -158,6 +162,28 @@ header p.lede code {
   border: 1px solid currentColor;
   border-radius: 999px;
   padding: 5px 10px;
+  white-space: nowrap;
+}
+
+/* On very narrow panels the absolute badge would either overlap the title or
+   force an awkwardly large title inset. Below 480px it drops into normal flow
+   above the title, and the title reclaims its full width. */
+@media (max-width: 480px) {
+  .panel {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .badge {
+    position: static;
+    order: -1;
+    margin-bottom: 12px;
+  }
+
+  .panel h2 {
+    padding-right: 0;
+  }
 }
 
 /* Country instance re-themes via the token API — the reuse proof (FR-15, SM-3).

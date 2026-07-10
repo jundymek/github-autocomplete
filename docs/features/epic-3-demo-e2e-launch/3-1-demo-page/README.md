@@ -75,6 +75,10 @@ themes, no special-casing in the component.
   only in `demo.css`. The lib keeps its system/`ui-monospace` stacks and imposes no font loading on a
   host. (The lib names `"JetBrains Mono"` inside its `--ac-font-mono` *fallback stack* but never loads
   it — that is by design, AR-5.)
+- **Badge never overlaps the title.** The badge is absolutely positioned (top-right, per the
+  mockup); the title reserves a right-side inset so a long title can't slide under it, and below
+  480px the badge drops into normal flow above the title (which then reclaims full width). This
+  fixes an overlap seen on narrow panels.
 - **Mockup dropdown is illustration only.** The mockup's inline listbox markup and its 300px panel
   bottom-padding (reserved space for a static dropdown) were not ported — the real dropdown is the
   Story 1.3 portal component, so panels use normal padding.

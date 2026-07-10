@@ -4,7 +4,20 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>github-autocomplete</title>
+    <title>github-autocomplete — demo</title>
+    <!--
+      Demo-only display fonts (Story 3.1). Space Grotesk (headline + section
+      labels) and JetBrains Mono (eyebrow, contract strip, badges, footer) are
+      loaded HERE, by the demo page, and referenced only in src/demo/demo.css.
+      The reusable component stays on system/ui-monospace stacks and imposes no
+      font loading on a host (AR-5, NFR-5).
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body>
     <div id="root"></div>

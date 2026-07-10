@@ -1,6 +1,9 @@
+---
+baseline_commit: fe499186525b3bda0edff015612fde65c856cc44
+---
 # Story 3.1: Demo page with the GitHub instance and a second, differently-themed data source
 
-Status: Approved
+Status: Review
 
 ## Story
 
@@ -68,26 +71,26 @@ FR-15 proof; AR-11; NFR-5; SM-3).
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Static country data + adapter (AC: 5, 10)
-  - [ ] `src/demo/countries.ts`: export a `Country` type (`{ name: string; flag: string; capital: string; currency: string; code: string }`) and a static `countries: Country[]` list (a reasonable set covering the mockup examples — Poland 🇵🇱 `Warsaw · PLN`, French Polynesia 🇵🇫 `Papeete · XPF`, plus enough to demonstrate filtering). Countries chosen per AR-11's recorded assumption; no external dependency.
-  - [ ] `src/demo/countryAdapter.ts`: export `fetchSuggestions(query: string, signal: AbortSignal): Promise<Country[]>` — ~20 lines — that lowercases the query, filters `countries` by case-insensitive substring on `name`, sorts A→Z (locale-aware, matching the component's expectation), and resolves. Do **not** re-implement the 3-char threshold here (the hook owns it). Respect `signal` (if `signal.aborted`, resolve/return without work). Add TSDoc noting it satisfies the AR-4 `fetchSuggestions` contract.
-  - [ ] `src/demo/countryAdapter.test.ts`: unit tests for case-insensitive substring filtering and A→Z ordering; abort pass-through no-op.
-- [ ] Task 2 — Demo page React structure (AC: 1, 2, 3, 4) 
-  - [ ] `src/App.tsx`: reproduce the `docs/design/demo-page.html` structure in JSX — `.wrap` → `header` (eyebrow, `h1` with accent `.path` span, `p.lede` with inline `<code>` for `useAutocomplete<T>` / `<Autocomplete<T>>`, `.contract` strip with four `<span>`s) → `main.stage` with two `<section class="panel">` → `footer`. Use `aria-labelledby` on each panel per the mockup.
-  - [ ] Panel 01: render `<GithubAutocomplete />` (from `src/features/github-search/`). Badge `instance 01`, title `GitHub users & repositories`, sub-copy per mockup.
-  - [ ] Panel 02: render the generic `<Autocomplete<Country> />` (from `src/lib/autocomplete/`) with `fetchSuggestions={countryAdapter.fetchSuggestions}`, a country `renderItem` (flag + name + meta), `getItemKey={c => c.code}`, and an `onSelect` that sets React state feeding a visible readout (e.g. `Selected: {country.name}`). Badge `instance 02 · same core`, title `Country picker`.
-  - [ ] `src/demo/SelectedReadout.tsx` (or inline): the visible "selected" readout element for panel 02.
-- [ ] Task 3 — Demo styling in plain CSS + fonts (AC: 6, 8, 9)
-  - [ ] `src/demo/demo.css`: port the mockup `<style>` block (wrap, header, eyebrow, `h1`, lede, `.contract`, `.stage` grid with the `@media (max-width: 860px)` single-column collapse, `.panel`, `.badge`, `.panel--countries` teal override, footer). Keep demo-only tokens (`--canvas`, display face) here — **never** in `src/lib/**`.
-  - [ ] Apply the country theme via `.panel--countries { --ac-color-accent: #0F766E; --ac-color-highlight: #E9F4F2; }` only. Confirm panel 01 uses the default lib fallbacks / demo `:root` `--ac-*` values (accent `#6639BA`, highlight `#F5F1FB`).
-  - [ ] Load Space Grotesk + JetBrains Mono via a `<link>` in `index.html` (or a demo-scoped mechanism); reference them only in `demo.css`. Verify no font import exists under `src/lib/**`.
-- [ ] Task 4 — Boundary & isolation check (AC: 7)
-  - [ ] Confirm `src/App.tsx`/`src/demo/**` import from both layers and nothing in `lib/`/`features/` imports the demo. Run `pnpm lint` (boundary rule green) and `pnpm typecheck`.
-- [ ] Task 5 — Tests (AC: 10)
-  - [ ] `src/demo/countryInstance.test.tsx` (RTL): render the generic `Autocomplete` with the country adapter, type a ≥3-char query, assert filtered countries appear, arrow/Enter or click selects, and the readout updates. Assert the generic component file was not modified for this (import the shipped component directly).
-- [ ] Task 6 — Documentation deliverables (see below)
-- [ ] Task 7 — Verify (AC: all)
-  - [ ] `pnpm lint && pnpm typecheck && pnpm test` all green. Run `pnpm dev` and manually verify both instances, the teal theme difference, mobile single-column collapse (≤860px), and the readout (see MANUAL_TESTING.md).
+- [x] Task 1 — Static country data + adapter (AC: 5, 10)
+  - [x] `src/demo/countries.ts`: export a `Country` type (`{ name: string; flag: string; capital: string; currency: string; code: string }`) and a static `countries: Country[]` list (a reasonable set covering the mockup examples — Poland 🇵🇱 `Warsaw · PLN`, French Polynesia 🇵🇫 `Papeete · XPF`, plus enough to demonstrate filtering). Countries chosen per AR-11's recorded assumption; no external dependency.
+  - [x] `src/demo/countryAdapter.ts`: export `fetchSuggestions(query: string, signal: AbortSignal): Promise<Country[]>` — ~20 lines — that lowercases the query, filters `countries` by case-insensitive substring on `name`, sorts A→Z (locale-aware, matching the component's expectation), and resolves. Do **not** re-implement the 3-char threshold here (the hook owns it). Respect `signal` (if `signal.aborted`, resolve/return without work). Add TSDoc noting it satisfies the AR-4 `fetchSuggestions` contract.
+  - [x] `src/demo/countryAdapter.test.ts`: unit tests for case-insensitive substring filtering and A→Z ordering; abort pass-through no-op.
+- [x] Task 2 — Demo page React structure (AC: 1, 2, 3, 4) 
+  - [x] `src/App.tsx`: reproduce the `docs/design/demo-page.html` structure in JSX — `.wrap` → `header` (eyebrow, `h1` with accent `.path` span, `p.lede` with inline `<code>` for `useAutocomplete<T>` / `<Autocomplete<T>>`, `.contract` strip with four `<span>`s) → `main.stage` with two `<section class="panel">` → `footer`. Use `aria-labelledby` on each panel per the mockup.
+  - [x] Panel 01: render `<GithubAutocomplete />` (from `src/features/github-search/`). Badge `instance 01`, title `GitHub users & repositories`, sub-copy per mockup.
+  - [x] Panel 02: render the generic `<Autocomplete<Country> />` (from `src/lib/autocomplete/`) with `fetchSuggestions={countryAdapter.fetchSuggestions}`, a country `renderItem` (flag + name + meta), `getItemKey={c => c.code}`, and an `onSelect` that sets React state feeding a visible readout (e.g. `Selected: {country.name}`). Badge `instance 02 · same core`, title `Country picker`.
+  - [x] `src/demo/SelectedReadout.tsx` (or inline): the visible "selected" readout element for panel 02.
+- [x] Task 3 — Demo styling in plain CSS + fonts (AC: 6, 8, 9)
+  - [x] `src/demo/demo.css`: port the mockup `<style>` block (wrap, header, eyebrow, `h1`, lede, `.contract`, `.stage` grid with the `@media (max-width: 860px)` single-column collapse, `.panel`, `.badge`, `.panel--countries` teal override, footer). Keep demo-only tokens (`--canvas`, display face) here — **never** in `src/lib/**`.
+  - [x] Apply the country theme via `.panel--countries { --ac-color-accent: #0F766E; --ac-color-highlight: #E9F4F2; }` only. Confirm panel 01 uses the default lib fallbacks / demo `:root` `--ac-*` values (accent `#6639BA`, highlight `#F5F1FB`).
+  - [x] Load Space Grotesk + JetBrains Mono via a `<link>` in `index.html` (or a demo-scoped mechanism); reference them only in `demo.css`. Verify no font import exists under `src/lib/**`.
+- [x] Task 4 — Boundary & isolation check (AC: 7)
+  - [x] Confirm `src/App.tsx`/`src/demo/**` import from both layers and nothing in `lib/`/`features/` imports the demo. Run `pnpm lint` (boundary rule green) and `pnpm typecheck`.
+- [x] Task 5 — Tests (AC: 10)
+  - [x] `src/demo/countryInstance.test.tsx` (RTL): render the generic `Autocomplete` with the country adapter, type a ≥3-char query, assert filtered countries appear, arrow/Enter or click selects, and the readout updates. Assert the generic component file was not modified for this (import the shipped component directly).
+- [x] Task 6 — Documentation deliverables (see below)
+- [x] Task 7 — Verify (AC: all)
+  - [x] `pnpm lint && pnpm typecheck && pnpm test` all green. Run `pnpm dev` and manually verify both instances, the teal theme difference, mobile single-column collapse (≤860px), and the readout (see MANUAL_TESTING.md).
 
 ## Documentation deliverables
 
@@ -187,13 +190,60 @@ GitHub `renderItem` (avatar/repo-icon distinction) is owned by Story 2.3 — do 
 
 ### Agent Model Used
 
+claude-opus-4-8[1m] (Claude Opus 4.8, 1M context) via Claude Code.
+
 ### Debug Log References
+
+- `pnpm lint` — green (AR-2 boundary rule holds).
+- `pnpm typecheck` — green.
+- `pnpm test` — 13 files, 183 tests passed (adapter unit, country integration, App smoke, plus all prior suites — no regressions).
+- `pnpm test:e2e` — 1 passed (build + preview + smoke against the new demo page).
+- Manual browser check (headless Chromium against `pnpm dev`): both instances mount; `--ac-color-accent` resolves to `#0f766e` on `.panel--countries` vs `#6639ba` on the GitHub panel; `pol` → French Polynesia + Poland sorted A→Z with flag + `capital · currency`; keyboard-select fills the readout, no tab opened.
 
 ### Completion Notes List
 
+- Reproduced `docs/design/demo-page.html` in React: header (eyebrow, accent `github/*` headline, lede, four-fact contract strip), a 7fr/5fr `.stage` grid collapsing to one column at ≤860px, two panels, footer.
+- **Reuse proof (FR-14, SM-3):** the country instance renders the SHIPPED generic `Autocomplete<Country>` from `src/lib/**` with ZERO lib changes; the adapter supplies only data. Threshold (3) + debounce (300ms) come from the hook defaults, identical to the GitHub instance.
+- **Theming (FR-15):** teal applied only via `--ac-color-accent: #0F766E` / `--ac-color-highlight: #E9F4F2` on `.panel--countries`; no lib class names pierced. Verified computed tokens differ per panel in a real browser.
+- **Fonts (AR-5/NFR-5):** Space Grotesk + JetBrains Mono loaded by `index.html` only, referenced only in `demo.css`; no font loading under `src/lib/**` (the `"JetBrains Mono"` occurrences there are fallback-stack names, not `@import`/`<link>` loads).
+- **Structure:** decomposed into presentational components (`DemoHeader`, `Panel`, `GithubPanel`, `CountryPanel`, `SelectedReadout`, `DemoFooter`), view logic (`countryRenderItem`), data (`countries`), adapter (`countryAdapter`), a custom hook (`useSelectedCountry`), and copy constants — `App.tsx` is pure composition.
+- **Location refinement (not a deviation):** the readout component lives at `src/demo/components/SelectedReadout.tsx` (the spec's Task 2 suggested `src/demo/SelectedReadout.tsx` "or inline"); grouped with the other demo components for a cleaner tree.
+- Updated the pre-existing `e2e/smoke.spec.ts` and `src/App.test.tsx`, which asserted the old Story-2.3 sandbox heading, to target the new demo page (full feature e2e remains Story 3.2).
+
+**Pre-PR review gate (mandatory):**
+- **Security review** (`/security-review`): 0 vulnerabilities. All new code is client-side presentational React rendering static/typed data through auto-escaping JSX; no unsafe sinks, no injection surface (adapter is a pure in-memory filter), no secrets.
+- **Codex second-pass** (codex:codex-rescue over the diff + spec): 0 High, 0 Med, **3 Low** — all in footer chrome. Triage (each verified against the spec, then fixed):
+  1. `DemoFooter` forced `target="_blank"` with no cue (a11y surprise) → **fixed**: links open in the same tab (footer links are project-internal, not required to open a new tab by any AC).
+  2. "source on github" pointed at the GitHub homepage (misleading) → **fixed**: now links to the real repo `https://github.com/jundymek/github-autocomplete`.
+  3. `docs/planning-artifacts` was a dead `#` link → **fixed**: rendered as plain text (it is an in-repo path, not a served URL), so no dead link ships. Footer model (`FOOTER_ITEMS`) now renders link-or-text based on presence of `href`.
+- Re-ran `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e` after the fixes — all green.
+
 ### File List
+
+- `src/App.tsx` — UPDATE
+- `src/App.test.tsx` — UPDATE
+- `index.html` — UPDATE
+- `e2e/smoke.spec.ts` — UPDATE
+- `src/demo/countries.ts` — NEW
+- `src/demo/countryAdapter.ts` — NEW
+- `src/demo/countryAdapter.test.ts` — NEW
+- `src/demo/countryRenderItem.tsx` — NEW
+- `src/demo/constants.ts` — NEW
+- `src/demo/demo.css` — NEW
+- `src/demo/components/Panel.tsx` — NEW
+- `src/demo/components/DemoHeader.tsx` — NEW
+- `src/demo/components/GithubPanel.tsx` — NEW
+- `src/demo/components/CountryPanel.tsx` — NEW
+- `src/demo/components/SelectedReadout.tsx` — NEW
+- `src/demo/components/DemoFooter.tsx` — NEW
+- `src/demo/hooks/useSelectedCountry.ts` — NEW
+- `src/demo/countryInstance.test.tsx` — NEW
+- `docs/features/epic-3-demo-e2e-launch/3-1-demo-page/README.md` — NEW
+- `docs/features/epic-3-demo-e2e-launch/3-1-demo-page/MANUAL_TESTING.md` — NEW
+- `docs/implementation-artifacts/3-1-demo-page.md` — UPDATE (status, task boxes, Dev Agent Record, Change Log, baseline_commit)
 
 ## Change Log
 
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
+| 2026-07-10 | 1.0 | Implemented the demo page: GitHub instance + re-themed country instance (same generic core), plain-CSS demo styling, demo-only fonts, adapter + integration tests, docs. Pre-PR review gate run (security + codex); 3 Low footer findings fixed. Status → review. | Amelia (Dev Agent) |

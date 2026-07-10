@@ -1,0 +1,262 @@
+/*
+ * Demo page styling (Story 3.1) — plain CSS, demo-only. Ported from
+ * `docs/design/demo-page.html`. This file lives OUTSIDE `src/lib/**`: the
+ * reusable component imposes no layout, typography, or font loading on a host
+ * (AR-5, NFR-5). It styles the page chrome (header, contract strip, stage grid,
+ * panels, badges, readout, footer) and the country row *content* classes; the
+ * autocomplete's own chrome comes from its scoped CSS Modules.
+ *
+ * The two `--ac-*` values the country panel overrides (accent, highlight) are
+ * the ONLY theming seam touched — no lib class names are targeted here.
+ */
+
+:root {
+  /* Component token defaults — panel 01 (GitHub) reads these for merge-purple.
+     They mirror the lib's own fallbacks so the default instance looks "shipped"
+     even though the host is free to omit them. */
+  --ac-color-surface: #ffffff;
+  --ac-color-text: #1f2328;
+  --ac-color-text-muted: #59636e;
+  --ac-color-accent: #6639ba;
+  --ac-color-highlight: #f5f1fb;
+  --ac-color-border: #d1d9e0;
+  --ac-font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --ac-font-mono: ui-monospace, 'JetBrains Mono', SFMono-Regular, Menlo, monospace;
+  --ac-radius: 10px;
+  --ac-radius-item: 6px;
+  --ac-shadow:
+    0 8px 24px rgba(31, 35, 40, 0.12), 0 1px 3px rgba(31, 35, 40, 0.08);
+
+  /* Demo-only (not component API): page canvas + display face. */
+  --canvas: #f2f4f8;
+  --ink: #1f2328;
+  --demo-display: 'Space Grotesk', var(--ac-font-ui);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+body {
+  font-family: var(--ac-font-ui);
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+.wrap {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 28px;
+}
+
+/* ————— Header: the thesis ————— */
+header {
+  padding: 72px 0 44px;
+}
+
+.eyebrow {
+  font: 500 12px/1 var(--ac-font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ac-color-accent);
+}
+
+h1 {
+  font-family: var(--demo-display);
+  font-weight: 600;
+  font-size: clamp(30px, 4.5vw, 42px);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  margin: 14px 0 12px;
+  max-width: 21ch;
+}
+
+h1 .path {
+  color: var(--ac-color-accent);
+}
+
+header p.lede {
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: var(--ac-color-text-muted);
+  max-width: 58ch;
+}
+
+header p.lede code {
+  font-family: var(--ac-font-mono);
+  font-size: 13.5px;
+}
+
+/* Contract strip — the task's requirements as UI facts */
+.contract {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 28px;
+  margin-top: 26px;
+  font: 500 12px/1.5 var(--ac-font-mono);
+  color: var(--ac-color-text-muted);
+}
+
+.contract span::before {
+  content: '▸ ';
+  color: var(--ac-color-accent);
+}
+
+/* ————— Two instances ————— */
+.stage {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: 28px;
+  align-items: start;
+  padding-bottom: 96px;
+}
+
+@media (max-width: 860px) {
+  .stage {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel {
+  background: var(--ac-color-surface);
+  border: 1px solid var(--ac-color-border);
+  border-radius: 14px;
+  padding: 26px;
+  position: relative;
+}
+
+.panel h2 {
+  font-family: var(--demo-display);
+  font-weight: 500;
+  font-size: 19px;
+  /* Reserve the top-right lane for the absolutely-positioned badge so a long
+     title (e.g. "GitHub users & repositories") never slides under it on narrow
+     panels. Width tracks the widest badge ("instance 02 · same core"). */
+  padding-right: 148px;
+}
+
+.panel .sub {
+  font-size: 13.5px;
+  color: var(--ac-color-text-muted);
+  line-height: 1.55;
+  margin: 6px 0 18px;
+}
+
+.panel .sub code {
+  font-family: var(--ac-font-mono);
+  font-size: 12px;
+  background: #eef1f6;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.badge {
+  position: absolute;
+  top: 26px;
+  right: 26px;
+  font: 500 10.5px/1 var(--ac-font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ac-color-accent);
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 5px 10px;
+  white-space: nowrap;
+}
+
+/* On very narrow panels the absolute badge would either overlap the title or
+   force an awkwardly large title inset. Below 480px it drops into normal flow
+   above the title, and the title reclaims its full width. */
+@media (max-width: 480px) {
+  .panel {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .badge {
+    position: static;
+    order: -1;
+    margin-bottom: 12px;
+  }
+
+  .panel h2 {
+    padding-right: 0;
+  }
+}
+
+/* Country instance re-themes via the token API — the reuse proof (FR-15, SM-3).
+   Exact hexes from design-tokens.md. NO lib class names are pierced. */
+.panel--countries {
+  --ac-color-accent: #0f766e;
+  --ac-color-highlight: #e9f4f2;
+}
+
+/* ————— Country row content (instance 02 renderItem) —————
+   The generic component owns the row grid/highlight; these style only the
+   cell content the country adapter injects (flag, name, meta). */
+.ac-flag {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #eef1f6;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+}
+
+.ac-name {
+  font: 500 14px/1.35 var(--ac-font-ui);
+  color: var(--ac-color-text);
+  display: block;
+}
+
+.ac-meta {
+  font-size: 12.5px;
+  color: var(--ac-color-text-muted);
+  margin-top: 1px;
+  display: block;
+}
+
+/* Selection readout (instance 02 onSelect target) */
+.readout {
+  margin-top: 16px;
+  font: 400 13.5px/1.5 var(--ac-font-ui);
+  color: var(--ac-color-text);
+}
+
+.readout-label {
+  font: 500 11.5px/1 var(--ac-font-mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ac-color-accent);
+}
+
+.readout-empty {
+  color: var(--ac-color-text-muted);
+}
+
+/* ————— Footer ————— */
+footer {
+  border-top: 1px solid var(--ac-color-border);
+  padding: 22px 0 44px;
+}
+
+footer .wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  font: 400 12.5px/1.6 var(--ac-font-mono);
+  color: var(--ac-color-text-muted);
+}
+
+footer a {
+  color: var(--ac-color-accent);
+  text-decoration: none;
+}
+
+footer a:hover,
+footer a:focus-visible {
+  text-decoration: underline;
+}

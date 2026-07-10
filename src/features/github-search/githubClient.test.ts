@@ -123,6 +123,32 @@ describe('searchGithub — happy path mapping (AC 4, 5)', () => {
     ])
   })
 
+  it('surfaces the combined API total_count (sum of users + repos) for the footer', async () => {
+    server.use(
+      ...okHandlers(
+        { ...emptyBody, total_count: 1200, items: [userItem] },
+        { ...emptyBody, total_count: 4, items: [repoItem] },
+      ),
+    )
+
+    const { totalCount } = await searchGithub('octo', signal())
+
+    expect(totalCount).toBe(1204)
+  })
+
+  it('treats a missing/invalid total_count as 0', async () => {
+    server.use(
+      ...okHandlers(
+        { incomplete_results: false, items: [userItem] },
+        { total_count: 'nope', items: [repoItem] },
+      ),
+    )
+
+    const { totalCount } = await searchGithub('octo', signal())
+
+    expect(totalCount).toBe(0)
+  })
+
   it('normalizes null description/avatar to undefined and drops malformed items', async () => {
     server.use(
       ...okHandlers(

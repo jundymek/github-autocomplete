@@ -8,6 +8,12 @@ const PER_PAGE = 50
 export type GithubSearchResults = {
   users: GithubResult[]
   repos: GithubResult[]
+  /**
+   * Combined `total_count` across both endpoints — the true number of matches
+   * GitHub reports (not the capped display count). Consumed by the footer's
+   * "X of Y" line (Story 2.3, FR-6). Absent/invalid API totals count as 0.
+   */
+  totalCount: number
 }
 
 /**
@@ -31,7 +37,18 @@ export async function searchGithub(
     requestJson(searchUrl('/search/users', query), headers, signal),
     requestJson(searchUrl('/search/repositories', query), headers, signal),
   ])
-  return { users: mapItems(users, mapUserItem), repos: mapItems(repos, mapRepoItem) }
+  return {
+    users: mapItems(users, mapUserItem),
+    repos: mapItems(repos, mapRepoItem),
+    totalCount: readTotalCount(users) + readTotalCount(repos),
+  }
+}
+
+/** Reads a non-negative integer `total_count`; anything else (absent, string, NaN) → 0. */
+function readTotalCount(body: unknown): number {
+  if (!isRecord(body)) return 0
+  const total = body.total_count
+  return typeof total === 'number' && Number.isFinite(total) && total >= 0 ? Math.floor(total) : 0
 }
 
 function searchUrl(endpoint: string, query: string): string {

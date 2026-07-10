@@ -51,5 +51,31 @@ export function createFetchSuggestions(
   }
 }
 
+/**
+ * Like {@link createFetchSuggestions}, but reports the combined API
+ * `total_count` via `onTotal` after each successful search — the footer's "Y"
+ * in "X of Y" (Story 2.3, FR-6). The returned function keeps the GitHub-
+ * agnostic AR-4 signature, so the total is delivered out-of-band rather than
+ * in the resolved value (which the lib requires to be a bare `GithubResult[]`).
+ *
+ * `onTotal` fires only on success, with the combined total, the query it
+ * belongs to, and the request's `signal`; a rejected search (all-or-nothing,
+ * U2) reports nothing, leaving the last known values untouched. The `signal`
+ * lets the consumer drop a stale report: if a newer query already aborted this
+ * request between its fetch resolving and this callback, `signal.aborted` is
+ * `true` — mirroring the hook's current-request guard so an out-of-order
+ * resolution can't overwrite fresher state.
+ */
+export function createFetchSuggestionsWithTotal(
+  onTotal: (total: number, query: string, signal: AbortSignal) => void,
+  token?: string,
+): (query: string, signal: AbortSignal) => Promise<GithubResult[]> {
+  return async (query, signal) => {
+    const { users, repos, totalCount } = await searchGithub(query, signal, token)
+    onTotal(totalCount, query, signal)
+    return mergeResults(users, repos)
+  }
+}
+
 /** Unauthenticated default {@link createFetchSuggestions} instance (AR-4). */
 export const fetchSuggestions = createFetchSuggestions()

@@ -1,6 +1,9 @@
+---
+baseline_commit: c3f74acb36cd86e599ddd8acd793ed49ea0aae90
+---
 # Story 2.3: `GithubAutocomplete` — wired instance with new-tab selection and rate-limit state
 
-Status: Approved
+Status: review
 
 ## Story
 
@@ -25,21 +28,21 @@ so that I can find and jump to any user/repo by keyboard alone and always unders
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Wire the component (AC: 1, 3)
-  - [ ] Create `src/features/github-search/GithubAutocomplete.tsx` — a thin wrapper rendering `Autocomplete<GithubResult>` from `src/lib/autocomplete/`, injecting `fetchSuggestions` (Story 2.2, with an optional `token` prop plumbed through), `getItemKey` (`` `${kind}:${id}` ``), `renderItem`, `onSelect`, and state-message overrides. Public props typed with TSDoc; optional `token?: string` prop forwarded to `fetchSuggestions`. (NFR-4)
-- [ ] Task 2 — `renderItem` per design state 04 (AC: 2)
-  - [ ] For `kind: 'user'`: avatar circle (`avatarUrl`) + `name` (login); for `kind: 'repo'`: `{ }` tile + bare `name` with a monospace `displayPath` (`owner/name`); right KIND column; echo the current query substring in the name using the accent (`<mark>`-style, `--ac-color-accent`). Do not re-implement highlight/focus — the lib component supplies highlighted state to `renderItem`. Distinguish kinds three ways (icon, mono path, KIND label), never color alone. [design state 04]
-- [ ] Task 3 — Selection → new tab (AC: 4)
-  - [ ] `onSelect = (item) => window.open(item.htmlUrl, '_blank', 'noopener,noreferrer')`. Enter and click both route through the lib's single selection path (Story 1.2/1.3), so identical behavior is structural. Host page state is untouched.
-- [ ] Task 4 — Error/rate-limit message mapping (AC: 5, 6, 7)
-  - [ ] Add a pure `describeError(error: GithubSearchError): { message: string; ... }` (or equivalent) in the adapter that switches exhaustively on `error.kind` with a `never` default: `rate-limit` → amber-styled message naming the throttle + countdown from `retryAfterSeconds` (when present) + token hint; `network` → "Search failed / check your connection"; `http` → "Search failed" (optionally including status). Feed these into the lib's error-state/message override so the lib stays GitHub-ignorant (only `{ status:'error'; message }` crosses the boundary).
-  - [ ] Render the rate-limit variant with the design state-08 (warning/amber) presentation and the generic error with state-07 presentation, using the lib's provided state-override seam (per Story 1.3's message/state override props, AR-4). If a distinct amber *container* is needed, drive it from adapter-supplied render, not by adding GitHub knowledge to the lib. (NFR-5)
-- [ ] Task 5 — Footer + retry (AC: 8, 9)
-  - [ ] Render the footer "X of Y · sorted A→Z" (X = displayed count, Y = API `total_count`, capped display) and the retry affordance that re-invokes the last query, consistent with design states 04/07. Surface `total_count` from the adapter (thread it from 2.1/2.2 as needed, or note if it requires a small return-shape extension — record any such change).
-- [ ] Task 6 — Tests (AC: 10)
-  - [ ] `src/features/github-search/GithubAutocomplete.test.tsx` — RTL + MSW node server (no fetch stubs). Cover (a)–(f). Spy on `window.open` (`vi.spyOn(window, 'open')`) and assert exact args for both Enter and click. Mock the 403 rate-limit (with `retry-after`) and a 500/network failure via MSW handlers. For retry, assert a second successful query renders results after an initial failure.
-- [ ] Task 7 — Verify (AC: all)
-  - [ ] `pnpm lint && pnpm typecheck && pnpm test` all green. No new dependencies.
+- [x] Task 1 — Wire the component (AC: 1, 3)
+  - [x] Create `src/features/github-search/GithubAutocomplete.tsx` — a thin wrapper rendering `Autocomplete<GithubResult>` from `src/lib/autocomplete/`, injecting `fetchSuggestions` (Story 2.2, with an optional `token` prop plumbed through), `getItemKey` (`` `${kind}:${id}` ``), `renderItem`, `onSelect`, and state-message overrides. Public props typed with TSDoc; optional `token?: string` prop forwarded to `fetchSuggestions`. (NFR-4)
+- [x] Task 2 — `renderItem` per design state 04 (AC: 2)
+  - [x] For `kind: 'user'`: avatar circle (`avatarUrl`) + `name` (login); for `kind: 'repo'`: `{ }` tile + bare `name` with a monospace `displayPath` (`owner/name`); right KIND column; echo the current query substring in the name using the accent (`<mark>`-style, `--ac-color-accent`). Do not re-implement highlight/focus — the lib component supplies highlighted state to `renderItem`. Distinguish kinds three ways (icon, mono path, KIND label), never color alone. [design state 04]
+- [x] Task 3 — Selection → new tab (AC: 4)
+  - [x] `onSelect = (item) => window.open(item.htmlUrl, '_blank', 'noopener,noreferrer')`. Enter and click both route through the lib's single selection path (Story 1.2/1.3), so identical behavior is structural. Host page state is untouched.
+- [x] Task 4 — Error/rate-limit message mapping (AC: 5, 6, 7)
+  - [x] Add a pure `describeError(error: GithubSearchError): { message: string; ... }` (or equivalent) in the adapter that switches exhaustively on `error.kind` with a `never` default: `rate-limit` → amber-styled message naming the throttle + countdown from `retryAfterSeconds` (when present) + token hint; `network` → "Search failed / check your connection"; `http` → "Search failed" (optionally including status). Feed these into the lib's error-state/message override so the lib stays GitHub-ignorant (only `{ status:'error'; message }` crosses the boundary).
+  - [x] Render the rate-limit variant with the design state-08 (warning/amber) presentation and the generic error with state-07 presentation, using the lib's provided state-override seam (per Story 1.3's message/state override props, AR-4). If a distinct amber *container* is needed, drive it from adapter-supplied render, not by adding GitHub knowledge to the lib. (NFR-5)
+- [x] Task 5 — Footer + retry (AC: 8, 9)
+  - [x] Render the footer "X of Y · sorted A→Z" (X = displayed count, Y = API `total_count`, capped display) and the retry affordance that re-invokes the last query, consistent with design states 04/07. Surface `total_count` from the adapter (thread it from 2.1/2.2 as needed, or note if it requires a small return-shape extension — record any such change).
+- [x] Task 6 — Tests (AC: 10)
+  - [x] `src/features/github-search/GithubAutocomplete.test.tsx` — RTL + MSW node server (no fetch stubs). Cover (a)–(f). Spy on `window.open` (`vi.spyOn(window, 'open')`) and assert exact args for both Enter and click. Mock the 403 rate-limit (with `retry-after`) and a 500/network failure via MSW handlers. For retry, assert a second successful query renders results after an initial failure.
+- [x] Task 7 — Verify (AC: all)
+  - [x] `pnpm lint && pnpm typecheck && pnpm test` all green. No new dependencies.
 
 ## Documentation deliverables
 
@@ -100,10 +103,74 @@ Part of Definition of Done (see CLAUDE.md). Create the documentation folder:
 
 ### Agent Model Used
 
+claude-opus-4-8[1m] (Claude Opus 4.8, 1M context) via the bmad-dev-story workflow.
+
 ### Debug Log References
+
+- PR: https://github.com/jundymek/github-autocomplete/pull/9
+- `pnpm lint && pnpm typecheck && pnpm test` — all green (170 tests, 11 files).
+- `pnpm test:e2e` — smoke test green (no new e2e in this story; 3.2 owns it).
+- Manual browser verification via a Playwright driver (session scratchpad, not committed) against
+  `pnpm dev`: 16/17 checks pass. The single automated "focus" check flagged a stale/backgrounded
+  page in the harness, not a defect — re-verified separately that focus stays on the `combobox`
+  (`role=combobox`, `aria-expanded=true`, `aria-activedescendant` → highlighted option). Screenshots
+  of states 04/07/08 captured and confirmed to match the design ground truth.
 
 ### Completion Notes List
 
+- Thin wrapper `GithubAutocomplete` renders the generic `Autocomplete<GithubResult>` and injects
+  `fetchSuggestions`, `getItemKey` (`${kind}:${id}`), `renderItem` (design state 04), `onSelect`
+  (new tab, `noopener,noreferrer`), the `messages.error` override, and the footer. Imports flow
+  one-way from `lib/` (AR-2 verified — no leak).
+- `describeError` maps `GithubSearchError` → `AutocompleteErrorContent` via an exhaustive `switch`
+  with a `never` default; `describeAutocompleteError` bridges the lib's `AutocompleteError.cause`.
+  The lib stays GitHub-ignorant — only `{ title, description, tone, retryable }` crosses (NFR-5).
+- **total_count threading (assumption resolved):** the AR-4 fetcher must resolve a bare
+  `GithubResult[]`, so `total_count` is delivered out-of-band. Added `createFetchSuggestionsWithTotal`
+  (reports `(total, query, signal)` on success only) and surfaced `totalCount` from `searchGithub`
+  (`GithubSearchResults` gained a `totalCount` field; invalid/absent → 0). `createFetchSuggestions`
+  / `fetchSuggestions` are unchanged. Recorded here per the story's Dev Notes.
+- Sandbox: mounted the component in `App.tsx` (explicitly the non-deliverable stage; the real demo
+  is Story 3.1) so it is browser-exercisable now.
+- **PERFORMANCE.md — n/a** (documented in the README): the debounce/abort/render-volume dimension
+  lives in Epic 1 (1.1, 1.3); this wrapper adds only thin rendering/selection.
+
+**Pre-PR review gate (mandatory) — executed:**
+- **Security review** (`/security-review`): no HIGH/MEDIUM findings. CSS `url()` avatar injection
+  assessed and dismissed (confidence 1/10 — React sets inline `style` via the CSSOM, single-property
+  assignment; `avatar_url` is GitHub-sourced + validated); `window.open` uses `noopener,noreferrer`;
+  no token logging/leakage; no `dangerouslySetInnerHTML`.
+- **Independent second-pass review** (codex-rescue over the diff). Triage:
+  1. **[Major — FIXED] Stale-request race on `onTotal`/`searchInfo`.** An out-of-order resolution
+     could overwrite the footer total / `<mark>` query with stale values. Verified plausible in the
+     narrow post-`await` window (impact cosmetic + self-correcting, never data/security). Fix:
+     `onTotal` now receives the request `signal`; the wrapper drops the commit when
+     `signal.aborted`, mirroring the hook's current-request guard. New test in `mergeResults.test.ts`.
+  2. **[Minor — FIXED] Retry test didn't assert the retried query.** Strengthened: the retry test
+     now records the `q` param on both endpoints and asserts `['react','react']`.
+  3. **[Minor — FIXED] "network/http" test only covered HTTP 500.** Added a dedicated
+     `HttpResponse.error()` network-rejection integration test (asserts connection wording, no
+     "HTTP", retry offered).
+- Re-ran `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e` after the fixes — all green.
+
 ### File List
 
+- `src/features/github-search/GithubAutocomplete.tsx` — NEW
+- `src/features/github-search/GithubAutocomplete.module.css` — NEW
+- `src/features/github-search/GithubAutocomplete.test.tsx` — NEW
+- `src/features/github-search/describeError.ts` — NEW
+- `src/features/github-search/describeError.test.ts` — NEW
+- `src/features/github-search/githubClient.ts` — UPDATE (add `totalCount` to `GithubSearchResults`)
+- `src/features/github-search/githubClient.test.ts` — UPDATE (totalCount coverage)
+- `src/features/github-search/mergeResults.ts` — UPDATE (add `createFetchSuggestionsWithTotal`)
+- `src/features/github-search/mergeResults.test.ts` — UPDATE (callback + stale-signal coverage)
+- `src/App.tsx` — UPDATE (sandbox mount; not part of the deliverable)
+- `docs/features/epic-2-github-adapter/2-3-github-autocomplete/README.md` — NEW
+- `docs/features/epic-2-github-adapter/2-3-github-autocomplete/MANUAL_TESTING.md` — NEW
+
 ## Change Log
+
+- 2026-07-10 — Implemented Story 2.3: wired `GithubAutocomplete` (new-tab selection, rate-limit +
+  generic error states, footer with combined `total_count`, retry). Threaded `total_count`
+  out-of-band via `createFetchSuggestionsWithTotal`. Addressed pre-PR review findings (stale-request
+  race fix + two test-quality gaps). Status → review.

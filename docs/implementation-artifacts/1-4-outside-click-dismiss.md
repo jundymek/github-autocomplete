@@ -1,6 +1,10 @@
+---
+baseline_commit: eb59242b22782d12a52bbeb06577fa09af4f8778
+---
+
 # Story 1.4: Outside-click / focus-loss dismissal for the `Autocomplete<T>` dropdown
 
-Status: ready-for-dev
+Status: in-progress
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -62,47 +66,47 @@ contract, not in the demo (CLAUDE.md: "fix the component's genericity, don't spe
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Implement outside-dismiss in the component (AC: 1, 2, 3, 4, 5, 6)
-  - [ ] In `src/lib/autocomplete/Autocomplete.tsx`, add an effect that — only while `popupOpen` is
+- [x] Task 1 — Implement outside-dismiss in the component (AC: 1, 2, 3, 4, 5, 6)
+  - [x] In `src/lib/autocomplete/Autocomplete.tsx`, add an effect that — only while `popupOpen` is
         true (the existing `state.isOpen || belowThreshold` value) — attaches a `pointerdown` listener
         on `document`. On a press whose `target` is **not** contained by the component root (`rootRef`)
         **and not** contained by the portalled popup element, call `handlers.close()` (results) and, for
         the below-threshold hint, also dismiss the hint (set `hintDismissedFor` to the current query,
         mirroring the existing Escape-dismiss path). Remove the listener in the effect cleanup.
-  - [ ] Give the portalled popup a ref (or an id) so the effect can test "inside the popup". The popup
+  - [x] Give the portalled popup a ref (or an id) so the effect can test "inside the popup". The popup
         is rendered via `createPortal(..., document.body)`; capturing its DOM node (a ref on the `.pop`
         div) is the cleanest "inside" check. Ensure the check is robust to the press landing on a child
         (option/footer) — use `popupEl.contains(target)`.
-  - [ ] Use `pointerdown` (not `click`) so the dropdown closes on press, before any focus/blur churn,
+  - [x] Use `pointerdown` (not `click`) so the dropdown closes on press, before any focus/blur churn,
         and so it works for mouse + touch + pen. Do **not** add a blur-based close that races with
         option `pointerdown` (clicking an option must still select). If focus-loss dismissal is desired,
         achieve it via the same outside-`pointerdown` path, not an input `onBlur` that would fire before
         the option click resolves.
-  - [ ] Reuse the hook's `close()` for the results case — do not reimplement debounce-cancel/abort in
+  - [x] Reuse the hook's `close()` for the results case — do not reimplement debounce-cancel/abort in
         the component. Keep the component's only extra responsibility the hint dismissal it already owns.
-- [ ] Task 2 — Tests (AC: 7)
-  - [ ] Extend `src/lib/autocomplete/Autocomplete.test.tsx` (or a focused new
+- [x] Task 2 — Tests (AC: 7)
+  - [x] Extend `src/lib/autocomplete/Autocomplete.test.tsx` (or a focused new
         `Autocomplete.dismiss.test.tsx`): open results (type ≥3 chars, settle), fire a `pointerdown` on
         `document.body` (outside), assert the popup is gone, `aria-expanded="false"`, and the input still
         holds the query.
-  - [ ] Assert a `pointerdown` on an option inside the portal selects it (`onSelect` called with the
+  - [x] Assert a `pointerdown` on an option inside the portal selects it (`onSelect` called with the
         right item) and does not leave a half-closed state; assert clicking the footer/inside the popup
         does not close it.
-  - [ ] Assert `Escape` still closes + retains query (guard against regression), and that an outside
+  - [x] Assert `Escape` still closes + retains query (guard against regression), and that an outside
         press dismisses the below-threshold hint popup.
-  - [ ] Assert cleanup: unmount after opening does not throw / warn and the listener no longer fires.
-- [ ] Task 3 — Docs
-  - [ ] Update the Story 1.3 feature `README.md`/`MANUAL_TESTING.md` (the component docs under
+  - [x] Assert cleanup: unmount after opening does not throw / warn and the listener no longer fires.
+- [x] Task 3 — Docs
+  - [x] Update the Story 1.3 feature `README.md`/`MANUAL_TESTING.md` (the component docs under
         `docs/features/epic-1-core-autocomplete/1-3-autocomplete-component/`) to note outside-click /
         focus-loss dismissal as a supported dismissal path alongside Escape and selection. Add a manual
         step: open the dropdown, click elsewhere on the page → it closes, query retained.
-  - [ ] Ship the story's own doc folder per CLAUDE.md:
+  - [x] Ship the story's own doc folder per CLAUDE.md:
         `docs/features/epic-1-core-autocomplete/1-4-outside-click-dismiss/` with `README.md` (what
         changed, why, the pointerdown-vs-click and portal-inside-check decisions) and `MANUAL_TESTING.md`
         (open → click outside closes; click option still selects; Escape still works; below-threshold
         hint dismiss).
-- [ ] Task 4 — Verify (AC: all)
-  - [ ] `pnpm lint && pnpm typecheck && pnpm test` all green (+ `pnpm test:e2e` if present). Manually
+- [x] Task 4 — Verify (AC: all)
+  - [x] `pnpm lint && pnpm typecheck && pnpm test` all green (+ `pnpm test:e2e` if present). Manually
         verify in `pnpm dev` on the 3.1 demo: type in each instance, click outside → dropdown closes,
         query kept; clicking an option still selects; Escape still works.
 
@@ -186,14 +190,45 @@ verified triage), re-run `pnpm lint && pnpm typecheck && pnpm test` after any fi
 
 ### Agent Model Used
 
+claude-opus-4-8 (1M context)
+
 ### Debug Log References
+
+- Full suite green: `pnpm lint && pnpm typecheck && pnpm test` → 14 files / 190 tests passed; `pnpm test:e2e` → 1 passed.
+- New lib tests: `Autocomplete.dismiss.test.tsx` → 7 passed; full lib suite 5 files / 119 tests.
+- Browser verification against the live Story 3.1 demo (country instance) confirmed: outside click
+  closes + query retained; option click still selects (onSelect fires, not swallowed); Escape still
+  closes; below-threshold hint dismisses on outside press. Note: this component does not auto-close
+  on selection — that is pre-existing, unchanged behavior (verified identical via `git stash`).
 
 ### Completion Notes List
 
+- Implemented outside-`pointerdown` dismissal entirely inside the lib component; no hook change, no
+  new runtime dependency, public props surface unchanged. `no-restricted-imports` boundary stays
+  green (lint passes).
+- Portal-aware inside check: close only when the press is outside **both** `rootRef` and the new
+  `popupRef` — a naive `root.contains` would break option clicks (popup is portalled to
+  `document.body`).
+- Chose `pointerdown` over `click`/`blur` to avoid the blur-before-option-click race; focus-loss
+  dismissal rides the same outside-press path. Bubbling phase sufficed (no capture needed) — verified
+  by test.
+- Reused the hook's `close()` for results; mirrored the existing Escape hint-dismiss
+  (`setHintDismissedFor`) for the below-threshold hint. Listener attached only while `popupOpen`,
+  removed on close and unmount.
+
 ### File List
+
+- `src/lib/autocomplete/Autocomplete.tsx` — UPDATE — added `popupRef`, outside-`pointerdown` effect, ref on `.pop`.
+- `src/lib/autocomplete/Autocomplete.dismiss.test.tsx` — NEW — RTL tests for AC 7 (a–e).
+- `docs/features/epic-1-core-autocomplete/1-3-autocomplete-component/README.md` — UPDATE — dismissal-paths note.
+- `docs/features/epic-1-core-autocomplete/1-3-autocomplete-component/MANUAL_TESTING.md` — UPDATE — outside-click manual step.
+- `docs/features/epic-1-core-autocomplete/1-4-outside-click-dismiss/README.md` — NEW — story docs.
+- `docs/features/epic-1-core-autocomplete/1-4-outside-click-dismiss/MANUAL_TESTING.md` — NEW — story manual testing.
+- `docs/implementation-artifacts/1-4-outside-click-dismiss.md` — UPDATE — baseline_commit, task checkboxes, Dev Agent Record, status.
 
 ## Change Log
 
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
 | 2026-07-10 | 0.1 | Story drafted as a follow-up bug-fix for the Story 1.3 outside-click dismissal gap, found during Story 3.1 demo manual testing. | Bob (Scrum Master) |
+| 2026-07-10 | 1.0 | Implemented outside-`pointerdown` dismissal in the lib component (popupRef + document listener), added `Autocomplete.dismiss.test.tsx`, updated 1.3 + 1.4 docs. All checks green. | Amelia (Dev) |

@@ -79,6 +79,10 @@ export default function App() {
 6. **Escape:** reopen results, press Escape.
    *Expected:* popup closes; the query text stays in the input; focus stays in the input (caret
    still blinks; typing continues immediately).
+6a. **Outside click** (added in Story 1.4): reopen results, then click anywhere else on the page.
+   *Expected:* popup closes and the query text stays in the input — the same outcome as Escape.
+   Clicking an option still selects it (it does not count as "outside"). See
+   `../1-4-outside-click-dismiss/`.
 7. **Empty state:** type `xqzyw`.
    *Expected:* "No matches for “xqzyw”" + "Check the spelling or try a shorter query." + footer
    "0 results / esc to close".

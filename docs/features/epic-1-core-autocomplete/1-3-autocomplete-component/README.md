@@ -122,6 +122,10 @@ the threshold), so the component drives it from input focus, and Escape dismisse
 component-level guard that runs only after the hook's `onKeyDown` declined the event — all
 navigation/selection keys still route exclusively through the hook (§3.4).
 
+**Dismissal paths.** The dropdown closes on Escape, on selection, and — added in
+[Story 1.4](../1-4-outside-click-dismiss/) — on an outside pointer press (a `pointerdown` outside
+both the component root and the portalled popup). All three keep the typed query in the input.
+
 ## Live region
 
 A visually-hidden `role="status"` / `aria-live="polite"` element rendered in the input's normal

@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 
@@ -193,6 +193,9 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
 
   const rootRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  /** The portalled popup element; used for the "inside" test since it lives
+   *  under document.body, outside rootRef's DOM subtree. */
+  const popupRef = useRef<HTMLDivElement>(null)
 
   const [isFocused, setIsFocused] = useState(false)
   /** Query whose below-threshold hint Escape dismissed; typing resets it. */
@@ -236,6 +239,28 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
     },
     [inputProps, belowThreshold, state.query],
   )
+
+  // Outside-press dismissal (WAI-ARIA combobox): while the popup is open,
+  // a pointerdown outside BOTH the component root and the portalled popup
+  // closes it — same outcome as Escape. `pointerdown` (not click/blur) closes
+  // on press, before focus churn, and covers mouse/touch/pen; a press inside
+  // the popup (option/footer) is treated as inside so clicks still select.
+  // The listener exists only while open and is removed on close/unmount (AC 5).
+  useEffect(() => {
+    if (!popupOpen) return
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null
+      const insideRoot = target !== null && rootRef.current?.contains(target) === true
+      const insidePopup = target !== null && popupRef.current?.contains(target) === true
+      if (insideRoot || insidePopup) return
+      // Results: reuse the hook's close() (cancels debounce, aborts, resets
+      // highlight, keeps the query). Hint: mirror the Escape-dismiss path.
+      handlers.close()
+      if (belowThreshold) setHintDismissedFor(state.query)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => document.removeEventListener('pointerdown', onPointerDown)
+  }, [popupOpen, belowThreshold, state.query, handlers])
 
   const retry = useCallback(() => {
     handlers.onInputChange(state.query)
@@ -339,7 +364,7 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
       </div>
       {popupOpen &&
         createPortal(
-          <div className={styles.pop} style={popupStyle}>
+          <div ref={popupRef} className={styles.pop} style={popupStyle}>
             {/* The listbox element exists whenever the combobox reports
                 aria-expanded="true", so aria-controls always resolves —
                 it just has no options outside the success state. */}

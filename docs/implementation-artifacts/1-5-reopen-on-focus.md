@@ -1,6 +1,10 @@
+---
+baseline_commit: 687c223f4d0e76a5793fd861641612ab426d176d
+---
+
 # Story 1.5: Reopen-on-focus for the `Autocomplete<T>` dropdown (retained results, no refetch)
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -83,53 +87,53 @@ case (CLAUDE.md: "fix the component's genericity, don't special-case the demo").
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Add reopen-on-focus to the hook (AC: 1, 2, 3, 4, 6)
-  - [ ] In `src/lib/autocomplete/useAutocomplete.ts`, add an `onFocus` handler (e.g. `openIfResults`
+- [x] Task 1 — Add reopen-on-focus to the hook (AC: 1, 2, 3, 4, 6)
+  - [x] In `src/lib/autocomplete/useAutocomplete.ts`, add an `onFocus` handler (e.g. `openIfResults`
         / `reopenOnFocus`) that, using current `state`, sets `isOpen: true` **only when** `!isOpen`
         **and** `status` is one of `success | empty | error` **and** `query.length >= minChars`.
         Otherwise it is a no-op. It must **not** call `startFetch`, must **not** create an
         `AbortController`, must **not** touch the debounce timer, and must **not** change
         `highlightedIndex` (results reopen with nothing pre-highlighted, exactly as after a fetch).
-  - [ ] Do not reopen when `status === 'idle'` (never fetched) or `status === 'loading'` (a fetch is
+  - [x] Do not reopen when `status === 'idle'` (never fetched) or `status === 'loading'` (a fetch is
         already in flight and will open on resolve) or when `query.length < minChars`. Below the
         threshold the results listbox stays closed; the component's existing focus-driven
         below-threshold hint is unaffected (it is component-owned and keyed off `isFocused`).
-  - [ ] Expose the handler on the input prop getter: add `onFocus` to `AutocompleteInputProps` (in
+  - [x] Expose the handler on the input prop getter: add `onFocus` to `AutocompleteInputProps` (in
         `types.ts`) and return it from `getInputProps()` so the component can spread it. Keep the
         change minimal and consistent with the existing `onChange`/`onKeyDown` prop-getter pattern.
-- [ ] Task 2 — Wire the component to the hook's focus handler (AC: 5, 6)
-  - [ ] In `src/lib/autocomplete/Autocomplete.tsx`, route the input's focus through the hook. The
+- [x] Task 2 — Wire the component to the hook's focus handler (AC: 5, 6)
+  - [x] In `src/lib/autocomplete/Autocomplete.tsx`, route the input's focus through the hook. The
         component already has its own `onFocus={() => setIsFocused(true)}` for the below-threshold
         hint — compose the two so **both** run: keep `setIsFocused(true)` (drives the hint) **and**
         call the hook's `inputProps.onFocus?.(event)` (drives results reopen). Do not drop or
         reorder the existing focus behavior. Add no results/`isOpen` logic in the component.
-  - [ ] Confirm the composition with Story 1.4: because a click into the input targets the component
+  - [x] Confirm the composition with Story 1.4: because a click into the input targets the component
         root, the 1.4 document `pointerdown` outside-close does not fire; focus then reopens. Verify
         there is no open→close flicker (add a test if the ordering is non-obvious).
-- [ ] Task 3 — Tests (AC: 7)
-  - [ ] Extend `src/lib/autocomplete/useAutocomplete.test.ts`: settle a `success` fetch, call
+- [x] Task 3 — Tests (AC: 7)
+  - [x] Extend `src/lib/autocomplete/useAutocomplete.test.ts`: settle a `success` fetch, call
         `close()`, then invoke `getInputProps().onFocus` (or the exposed handler) and assert
         `state.isOpen === true` with `fetchSuggestions` **not** called again and no new controller.
-  - [ ] Assert the no-op cases: focus with `idle` (fresh) → stays closed, no fetch; focus with a
+  - [x] Assert the no-op cases: focus with `idle` (fresh) → stays closed, no fetch; focus with a
         below-`minChars` query → results listbox stays closed, no fetch; focus while `loading` or
         already open → no second fetch, debounce/`highlightedIndex` untouched.
-  - [ ] Assert `empty` and `error` states reopen on focus without refetch.
-  - [ ] Extend `src/lib/autocomplete/Autocomplete.test.tsx` (or add a focused
+  - [x] Assert `empty` and `error` states reopen on focus without refetch.
+  - [x] Extend `src/lib/autocomplete/Autocomplete.test.tsx` (or add a focused
         `Autocomplete.reopen.test.tsx`): type ≥3 chars → settle → Escape closes → refocus the input →
         the same options reappear, `aria-expanded="true"`, and `fetchSuggestions` call count is
         unchanged. Confirm the below-threshold hint focus path and the Story 1.3/1.4 tests still pass.
-- [ ] Task 4 — Docs
-  - [ ] Update the Story 1.3 feature docs
+- [x] Task 4 — Docs
+  - [x] Update the Story 1.3 feature docs
         (`docs/features/epic-1-core-autocomplete/1-3-autocomplete-component/{README.md,MANUAL_TESTING.md}`)
         to record reopen-on-focus alongside the dismissal paths: focusing a closed input that still
         holds a qualifying query with results reopens the dropdown with no new request.
-  - [ ] Ship the story's own doc folder per CLAUDE.md:
+  - [x] Ship the story's own doc folder per CLAUDE.md:
         `docs/features/epic-1-core-autocomplete/1-5-reopen-on-focus/` with `README.md` (what changed,
         why, the hook-owns-`isOpen` and no-refetch decisions, and the focus-composition with the
         below-threshold hint) and `MANUAL_TESTING.md` (type → close → refocus reopens with retained
         results and no network call; idle/below-threshold focus does not open results).
-- [ ] Task 5 — Verify (AC: all)
-  - [ ] `pnpm lint && pnpm typecheck && pnpm test` all green (+ `pnpm test:e2e` if present). Manually
+- [x] Task 5 — Verify (AC: all)
+  - [x] `pnpm lint && pnpm typecheck && pnpm test` all green (+ `pnpm test:e2e` if present). Manually
         verify in `pnpm dev` on the 3.1 demo: type `jun` in the GitHub instance, close, click back →
         results reappear with **no** new network request (check the Network panel); repeat on the
         country instance. Confirm idle focus and below-threshold focus behave as before.
@@ -233,14 +237,48 @@ then PR. [Source: CLAUDE.md#Working rules / #Story pipeline]
 
 ### Agent Model Used
 
+claude-opus-4-8 (1M context)
+
 ### Debug Log References
+
+- Full suite green: `pnpm lint && pnpm typecheck && pnpm test` → 15 files / 200 tests passed; `pnpm test:e2e` → 1 passed.
+- New/updated lib tests: `useAutocomplete.test.tsx` reopen block (7 hook cases) + `Autocomplete.reopen.test.tsx` (4 component cases); full lib suite 6 files / 129 tests.
+- Browser verification against the live 3.1 demo, counting `api.github.com` requests: type `vuejs` →
+  results (2 requests, 200/200) → Escape closes, query retained → refocus reopens the same 50 options
+  with **zero** new requests. Country instance reopened identically. Note: an early probe with a
+  hammered `react` query showed no reopen — traced to the fetch still being `loading` when Escape hit
+  (so `close()` left `status: 'loading'` → guard correctly refuses to reopen, AC 4), not a bug;
+  fresh-query runs reopen cleanly on both instances.
 
 ### Completion Notes List
 
+- Implemented reopen-on-focus in the hook (`openIfResults`, exposed via `getInputProps().onFocus`);
+  the component composes it with its existing `setIsFocused(true)`. No new runtime dependency, public
+  props surface adds only the optional-by-nature `onFocus` on the input-prop-getter shape (spread
+  verbatim; no new component prop). `no-restricted-imports` boundary stays green (lint passes).
+- Guard: reopen only when `!isOpen && query.length >= minChars && status ∈ {success, empty, error}`.
+  Idle, below-threshold, loading, and already-open are all no-ops — verified by unit tests.
+- No refetch on reopen: `openIfResults` flips only `isOpen`; never calls `startFetch`/creates a
+  controller. Proven by unchanged `fetchSuggestions` call count across close→refocus (unit + browser).
+- Composes with Story 1.4 without flicker (click into input is inside root → 1.4 outside-close does
+  not fire; focus reopens). Covered by a component test.
+
 ### File List
+
+- `src/lib/autocomplete/useAutocomplete.ts` — UPDATE — `openIfResults` callback + `onFocus` on `getInputProps`.
+- `src/lib/autocomplete/types.ts` — UPDATE — added `onFocus` to `AutocompleteInputProps`.
+- `src/lib/autocomplete/Autocomplete.tsx` — UPDATE — compose hook `onFocus` with `setIsFocused(true)`.
+- `src/lib/autocomplete/useAutocomplete.test.tsx` — UPDATE — reopen-on-focus hook unit tests.
+- `src/lib/autocomplete/Autocomplete.reopen.test.tsx` — NEW — end-to-end reopen tests.
+- `docs/features/epic-1-core-autocomplete/1-3-autocomplete-component/README.md` — UPDATE — reopen note.
+- `docs/features/epic-1-core-autocomplete/1-3-autocomplete-component/MANUAL_TESTING.md` — UPDATE — reopen manual step.
+- `docs/features/epic-1-core-autocomplete/1-5-reopen-on-focus/README.md` — NEW — story docs.
+- `docs/features/epic-1-core-autocomplete/1-5-reopen-on-focus/MANUAL_TESTING.md` — NEW — story manual testing.
+- `docs/implementation-artifacts/1-5-reopen-on-focus.md` — UPDATE — baseline_commit, task checkboxes, Dev Agent Record, status.
 
 ## Change Log
 
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
 | 2026-07-10 | 0.1 | Story drafted as a follow-up to Story 1.4: reopen the dropdown on focus when results for the current query already exist, without refetching. Found during Story 3.1 demo manual testing (closing then clicking back showed an empty caret). | Łukasz (via BMAD create-story) |
+| 2026-07-10 | 1.0 | Implemented reopen-on-focus in the hook (`openIfResults` + `onFocus` prop-getter), composed in the component, added hook + component tests, updated 1.3 + 1.5 docs. All checks green; browser-verified no-refetch on both demo instances. | Amelia (Dev) |

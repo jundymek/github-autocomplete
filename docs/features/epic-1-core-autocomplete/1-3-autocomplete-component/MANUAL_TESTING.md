@@ -83,6 +83,11 @@ export default function App() {
    *Expected:* popup closes and the query text stays in the input — the same outcome as Escape.
    Clicking an option still selects it (it does not count as "outside"). See
    `../1-4-outside-click-dismiss/`.
+6b. **Reopen on focus** (added in Story 1.5): after closing with the query still in the input, click
+   back into (or Tab to) the input.
+   *Expected:* the dropdown reopens with the same results and **no new network request** fires.
+   Focusing a fresh (never-searched) or below-threshold input does not open the results list. See
+   `../1-5-reopen-on-focus/`.
 7. **Empty state:** type `xqzyw`.
    *Expected:* "No matches for “xqzyw”" + "Check the spelling or try a shorter query." + footer
    "0 results / esc to close".

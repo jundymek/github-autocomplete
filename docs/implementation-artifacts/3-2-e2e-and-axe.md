@@ -1,6 +1,8 @@
 # Story 3.2: Playwright e2e smoke and axe accessibility scan
 
-Status: Approved
+Status: Ready for Review
+
+baseline_commit: c482540e6cbd56bdbd43ebd42beb620cafaa9d40
 
 ## Story
 
@@ -75,27 +77,27 @@ layer; AR-12; NFR-1).
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Playwright config + webServer (AC: 1, 8)
-  - [ ] Ensure `playwright.config.ts` (from Story 0.2 harness) has a `webServer` reusing `pnpm dev` (or `pnpm preview` after `pnpm build`) with `reuseExistingServer: !process.env.CI`, the correct `baseURL`/port, and a reasonable timeout. Confirm `test:e2e` script exists.
-  - [ ] Confirm `@axe-core/playwright` is installed (from 0.2); if not, add it as a devDependency.
-- [ ] Task 2 — Deterministic fixtures + route helper (AC: 1, 11)
-  - [ ] `e2e/fixtures/github.ts`: export deterministic response bodies — a small users+repos set (with known `html_url`s and names to assert sort order), a 50-users + 50-repos payload, and a 403 rate-limit response (status 403, headers `x-ratelimit-remaining: 0`, `retry-after`, and a rate-limit body). **User items must include `name`, `bio`, and `type` fields (Story 1.6):** include at least one `type: "Organization"` item and at least one user whose `login` does **not** contain the query but whose `name` does, so the by-name match/highlight can be asserted.
-  - [ ] `e2e/helpers/mockGithub.ts`: a helper that registers `page.route('https://api.github.com/search/users*', …)` and `…/search/repositories*` returning a chosen fixture. Reused by every spec so the real API is never called. Expose a way to **count** matched requests (e.g. increment a counter in the route handler) so the reopen-no-refetch assertion (AC 10) can verify the count is unchanged across a close→refocus cycle.
-- [ ] Task 3 — search + new-tab + focus specs (AC: 2, 3, 7, 11)
-  - [ ] `e2e/newtab.spec.ts`: mock small fixture; type query; assert results render sorted (AC 2); ArrowDown×2 + Enter → `context.waitForEvent('page')`, assert `popup.url()` === expected `html_url`, and demo page state retained; a second case asserts mouse click opens the same URL. **Also assert (AC 11)** a user row shows its display name/bio secondary text, an `org`-kind row is labeled `org`, and a name-only match highlights in the secondary text.
-  - [ ] `e2e/focus.spec.ts`: assert the input keeps focus during ArrowUp/Down and after Escape (dropdown closes, query text remains).
-- [ ] Task 3b — dismissal + reopen specs (AC: 9, 10) — Stories 1.4 / 1.5
-  - [ ] `e2e/dismiss.spec.ts`: mock small fixture; open results; `pointerdown`/click on the page background (outside the component and popup); assert `aria-expanded="false"` and the query text is retained. Keep it to the outside-close path only (option-click selection is covered by AC 3); do not re-test the hook's close internals.
-  - [ ] `e2e/reopen.spec.ts` (or fold into `focus.spec.ts`): open results; close (Escape or outside-click); re-focus the input; assert the same options reappear with `aria-expanded="true"` **and the matched-request count from the route helper is unchanged** (no new GitHub request). Add a case: focusing a fresh (never-searched) input opens nothing.
-- [ ] Task 4 — rate-limit spec (AC: 4)
-  - [ ] `e2e/ratelimit.spec.ts`: route to the 403 rate-limit fixture; type a qualifying query; assert the dedicated rate-limit message is visible and distinct from the generic error text.
-- [ ] Task 5 — clipping spec (AC: 6)
-  - [ ] Decide & implement the `overflow: hidden` host (see Dev Notes decision). `e2e/clipping.spec.ts`: open the dropdown inside the clipping wrapper and assert full visibility (portal escapes the clip); with the 50+50 fixture assert bounded height + internal scroll + no pagination.
-- [ ] Task 6 — axe spec (AC: 5)
-  - [ ] `e2e/a11y.spec.ts`: scan closed, open-with-results, and error states with `AxeBuilder`; fail on any `critical`/`serious` violation. Filter/report minor+moderate without failing.
-- [ ] Task 7 — Documentation deliverables (see below)
-- [ ] Task 8 — Verify (AC: all)
-  - [ ] `pnpm test:e2e` green locally; confirm the CI `playwright test` stage passes on Node 22 + pnpm with browsers cached. Confirm no spec references `api.github.com` except through the `page.route` mocks.
+- [x] Task 1 — Playwright config + webServer (AC: 1, 8)
+  - [x] Ensure `playwright.config.ts` (from Story 0.2 harness) has a `webServer` reusing `pnpm dev` (or `pnpm preview` after `pnpm build`) with `reuseExistingServer: !process.env.CI`, the correct `baseURL`/port, and a reasonable timeout. Confirm `test:e2e` script exists.
+  - [x] Confirm `@axe-core/playwright` is installed (from 0.2); if not, add it as a devDependency.
+- [x] Task 2 — Deterministic fixtures + route helper (AC: 1, 11)
+  - [x] `e2e/fixtures/github.ts`: export deterministic response bodies — a small users+repos set (with known `html_url`s and names to assert sort order), a 50-users + 50-repos payload, and a 403 rate-limit response (status 403, headers `x-ratelimit-remaining: 0`, `retry-after`, and a rate-limit body). **User items must include `name`, `bio`, and `type` fields (Story 1.6):** include at least one `type: "Organization"` item and at least one user whose `login` does **not** contain the query but whose `name` does, so the by-name match/highlight can be asserted.
+  - [x] `e2e/helpers/mockGithub.ts`: a helper that registers `page.route('https://api.github.com/search/users*', …)` and `…/search/repositories*` returning a chosen fixture. Reused by every spec so the real API is never called. Expose a way to **count** matched requests (e.g. increment a counter in the route handler) so the reopen-no-refetch assertion (AC 10) can verify the count is unchanged across a close→refocus cycle.
+- [x] Task 3 — search + new-tab + focus specs (AC: 2, 3, 7, 11)
+  - [x] `e2e/newtab.spec.ts`: mock small fixture; type query; assert results render sorted (AC 2); ArrowDown×2 + Enter → `context.waitForEvent('page')`, assert `popup.url()` === expected `html_url`, and demo page state retained; a second case asserts mouse click opens the same URL. **Also assert (AC 11)** a user row shows its display name/bio secondary text, an `org`-kind row is labeled `org`, and a name-only match highlights in the secondary text.
+  - [x] `e2e/focus.spec.ts`: assert the input keeps focus during ArrowUp/Down and after Escape (dropdown closes, query text remains).
+- [x] Task 3b — dismissal + reopen specs (AC: 9, 10) — Stories 1.4 / 1.5
+  - [x] `e2e/dismiss.spec.ts`: mock small fixture; open results; `pointerdown`/click on the page background (outside the component and popup); assert `aria-expanded="false"` and the query text is retained. Keep it to the outside-close path only (option-click selection is covered by AC 3); do not re-test the hook's close internals.
+  - [x] `e2e/reopen.spec.ts` (or fold into `focus.spec.ts`): open results; close (Escape or outside-click); re-focus the input; assert the same options reappear with `aria-expanded="true"` **and the matched-request count from the route helper is unchanged** (no new GitHub request). Add a case: focusing a fresh (never-searched) input opens nothing.
+- [x] Task 4 — rate-limit spec (AC: 4)
+  - [x] `e2e/ratelimit.spec.ts`: route to the 403 rate-limit fixture; type a qualifying query; assert the dedicated rate-limit message is visible and distinct from the generic error text.
+- [x] Task 5 — clipping spec (AC: 6)
+  - [x] Decide & implement the `overflow: hidden` host (see Dev Notes decision). `e2e/clipping.spec.ts`: open the dropdown inside the clipping wrapper and assert full visibility (portal escapes the clip); with the 50+50 fixture assert bounded height + internal scroll + no pagination.
+- [x] Task 6 — axe spec (AC: 5)
+  - [x] `e2e/a11y.spec.ts`: scan closed, open-with-results, and error states with `AxeBuilder`; fail on any `critical`/`serious` violation. Filter/report minor+moderate without failing.
+- [x] Task 7 — Documentation deliverables (see below)
+- [x] Task 8 — Verify (AC: all)
+  - [x] `pnpm test:e2e` green locally; confirm the CI `playwright test` stage passes on Node 22 + pnpm with browsers cached. Confirm no spec references `api.github.com` except through the `page.route` mocks.
 
 ## Documentation deliverables
 
@@ -206,11 +208,62 @@ re-run of the hook logic. Adding logic-level tests would violate the counter-met
 
 ### Agent Model Used
 
+claude-opus-4-8 (1M context)
+
 ### Debug Log References
+
+- Two follow-up debugging findings surfaced during the first e2e run (both fixed,
+  no product-code change):
+  1. **New-tab URL mismatch.** `popup.waitForLoadState` navigated the popup to the
+     real GitHub page, so `popup.url()` reflected a redirect, not the requested
+     `html_url`. Fixed by stubbing `https://github.com/*` in the newtab spec's
+     context so the popup resolves to a local stub — the assertion reads the exact
+     requested URL and the suite never touches the network (AR-12).
+  2. **Rate-limit 403 mis-mapped to a generic error.** The client reads
+     `x-ratelimit-remaining` / `retry-after`, which are not CORS-safelisted
+     response headers; a cross-origin fetch only exposes them when the response
+     sends `Access-Control-Expose-Headers`. Confirmed via an in-browser `fetch`
+     probe (headers came back `null` until the header was added). Fixed by making
+     the rate-limit fixture mirror the real API's CORS exposure headers.
 
 ### Completion Notes List
 
+- Prerequisites verified on `master` before starting: `fix(1.4)`, `feat(1.5)`,
+  and `feat(1.6)` (c482540) all present — AC 9/10/11 dependencies satisfied.
+- Added 7 e2e specs (14 tests) covering AC 2–11's browser-real facets; removed the
+  0.2 placeholder `smoke.spec.ts` (subsumed). Kept the suite thin per SM-C1 / §3.6
+  — no hook logic (debounce/threshold/cancellation) is re-tested in e2e.
+- All GitHub HTTP is mocked via `page.route` deterministic fixtures; a matched-
+  request counter in the helper makes the reopen-no-refetch proof (AC 10) concrete.
+- Clipping host implemented as a `?clip=1`-gated demo view (spec Option A); the
+  portalled dropdown escapes the `overflow: hidden` clip (AR-7).
+- Axe bar enforced at zero `critical`/`serious` across closed/open/error states
+  (NFR-1); current run is clean.
+- `e2e/` moved to its own `tsconfig.e2e.json` (bundler resolution + esModuleInterop)
+  so the specs typecheck without `nodenext`'s `.js`-extension requirement.
+- Full local verification green: `pnpm lint`, `pnpm typecheck`, `pnpm test`
+  (205 passed), `pnpm test:e2e` (14 passed). CI already runs all four stages on
+  Node 22 + pnpm with browsers cached (no CI changes needed).
+
 ### File List
+
+- `e2e/fixtures/github.ts` (new)
+- `e2e/helpers/mockGithub.ts` (new)
+- `e2e/helpers/autocomplete.ts` (new)
+- `e2e/newtab.spec.ts` (new)
+- `e2e/focus.spec.ts` (new)
+- `e2e/dismiss.spec.ts` (new)
+- `e2e/reopen.spec.ts` (new)
+- `e2e/ratelimit.spec.ts` (new)
+- `e2e/clipping.spec.ts` (new)
+- `e2e/a11y.spec.ts` (new)
+- `e2e/smoke.spec.ts` (removed)
+- `src/demo/components/ClippingHost.tsx` (new)
+- `src/App.tsx` (updated — `?clip=1` clipping-host branch)
+- `tsconfig.e2e.json` (new)
+- `tsconfig.node.json` (updated — dropped `e2e` from include)
+- `tsconfig.json` (updated — added e2e project reference)
+- `docs/features/epic-3-demo-e2e-launch/3-2-e2e-and-axe/README.md` (new)
 
 ## Change Log
 

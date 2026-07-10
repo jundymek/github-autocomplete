@@ -1,5 +1,6 @@
 import './demo/demo.css'
 
+import { ClippingHost, isClippingHostRequested } from './demo/components/ClippingHost'
 import { CountryPanel } from './demo/components/CountryPanel'
 import { DemoFooter } from './demo/components/DemoFooter'
 import { DemoHeader } from './demo/components/DemoHeader'
@@ -18,6 +19,21 @@ import { GithubPanel } from './demo/components/GithubPanel'
  * Import direction holds: nothing in `lib/` or `features/` imports this file.
  */
 function App() {
+  // `?clip=1` swaps the two-instance stage for a dedicated overflow-clipping
+  // host (FR-7 e2e proof, Story 3.2). Gated so it never clutters the primary
+  // layout; the clipping spec navigates to /?clip=1.
+  const clipping = isClippingHostRequested(window.location.search)
+  // In clip mode, render ONLY the compact clipping host near the top of the
+  // page (no tall header/footer) so the portalled dropdown is comfortably
+  // within the viewport — the clipping spec proves it escapes the clip AND is
+  // fully visible.
+  if (clipping) {
+    return (
+      <div className="wrap">
+        <ClippingHost />
+      </div>
+    )
+  }
   return (
     <>
       <div className="wrap">

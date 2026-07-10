@@ -1,118 +1,136 @@
-# Story 1.6: Show why a GitHub user matched — display name / bio secondary text + Organization kind
+---
+baseline_commit: de9787d2a922469c5e5fdf43afd044ce287d7427
+---
 
-Status: ready-for-dev
+# Story 1.6: Make GitHub user matches legible — "matches profile" hint + Organization kind
+
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
 ## Story
 
 As a user searching GitHub in the demo,
-I want each user row to show the profile's display name (or bio) when the query didn't match the
-visible login,
-so that I understand **why** a result like `Beomi` appears for the query `jun` instead of it looking
-like a random hit (task brief: results ordered by "repository and **profile name**"; FR-4 merged
-user+repo rendering; AR-8 slim domain shape).
+I want a user row to tell me when it matched my query on a hidden profile field (not the visible
+login), and to distinguish organizations from people,
+so that a result like `beomi` appearing for `jun` reads as intentional (it matched the profile name
+"Junbum Lee / Beomi") rather than as noise (task brief: reusable, self-contained component; FR-4
+merged user+repo rendering; AR-8 slim domain shape).
 
-## Background (defect origin)
+## Background (defect origin + API reality)
 
 Surfaced during manual testing of the Story 3.1 demo (and confirmed by the user): typing `jun`
-returns users such as `Beomi` and `bluele` whose **login has no `jun` in it**. GitHub's
-`/search/users` matches on hidden profile fields — most commonly the user's **`name`** (e.g. `Beomi`
-→ "Junhoo Lee") and **`bio`** — but the adapter only maps and renders the `login`, so the match
-looks arbitrary. Users pasted next to repositories (both sorted A→Z) then read as noise.
+returns users such as `beomi` whose **login has no `jun` in it**. GitHub matches on hidden profile
+fields (display `name`, `bio`), but the adapter renders only the `login`, so the match looks
+arbitrary next to repositories in the merged A→Z list.
 
-Two concrete gaps in the GitHub adapter (`src/features/github-search/`), both in the **feature layer**
-(not the reusable `lib/`, which is correctly data-source-agnostic):
+**Critical API finding (verified live, do not re-litigate).** The public REST
+`GET /search/users` response **does not include** `name` or `bio` at all — the field is *absent*
+(`'name' in item === false`), not merely `null`, even for well-known accounts. Those fields exist
+only on the full `GET /users/{login}` profile, and the equivalent one-shot alternative (GraphQL
+`search(type: USER)`) **requires a token even to read**. This project is unauthenticated by default
+(CLAUDE.md), so fetching the actual name/bio for every result is off the table: `N × /users/{login}`
+would blow the 60/hour unauthenticated limit (the opposite of Story 1.5's intent), and GraphQL would
+force a token and a second, divergent client — breaking the thin-adapter/reusable-component design
+the brief prizes. `type` (`"User" | "Organization"`), however, **is** present in the search response.
+[Source: verified via direct `curl https://api.github.com/search/users?q=…` — items expose
+`login,id,avatar_url,html_url,type,score,…` but no `name`/`bio`; GraphQL user search returns 401/rate-limit
+without a token; docs/task.md (reusable component); CLAUDE.md#Stack (unauthenticated by default)]
 
-1. `mapUserItem` maps only `id`, `login`, `html_url`, `avatar_url` — it **discards** the `name` and
-   `bio` fields that `/search/users` already returns (no extra request needed). So the row can never
-   show the text the query actually matched.
-2. `type` is discarded, so **organizations render as `user`** in the KIND column even though the API
-   distinguishes `type: "User"` vs `type: "Organization"`.
+**So this story does what is achievable with the data we actually have, at zero extra request cost:**
 
-[Source: src/features/github-search/githubClient.ts (`mapUserItem`); src/features/github-search/types.ts (`GithubResult`); src/features/github-search/GithubAutocomplete.tsx (`renderGithubItem`); docs/task.md (ordering by "profile name"); docs/design/component-states.html (state 04 row anatomy); observed in the 3.1 demo]
+1. **"Matches profile" hint.** We cannot show *what* matched, but we know *whether* the visible login
+   contains the query. When it does **not**, the match must be in a hidden profile field, so the row
+   shows a short, muted "matches profile" line — turning an apparently-random hit into an
+   explained one. When the login *does* contain the query (the existing `<mark>` highlight already
+   shows it), no hint is shown.
+2. **Organization kind.** `type` is discarded today, so **organizations render as `user`**. Map it so
+   organizations read `org` in the KIND column.
+
+Both are pure feature-layer changes reading fields already in the response — no extra request, no
+token, no `lib/` change. (A future story could add real name/bio behind an opt-in token + GraphQL
+path; explicitly out of scope here.)
+[Source: src/features/github-search/githubClient.ts (`mapUserItem` discards `type`); src/features/github-search/types.ts (`GithubResult`); src/features/github-search/GithubAutocomplete.tsx (`renderGithubItem`, `highlightMatch`); docs/design/component-states.html (state 04 row anatomy); observed in the 3.1 demo]
 
 ## Acceptance Criteria
 
-1. **User rows show a display name / bio when available (why-it-matched context).** When a
-   `/search/users` item has a non-empty `name`, the user row renders it as secondary text next to the
-   login. When `name` is absent/empty but `bio` is present, the `bio` is shown instead. When both are
-   absent/empty, the row is unchanged from today (login only). No layout regression for repo rows.
-2. **No new network request — data comes from the existing search response.** The `name`/`bio` values
-   are read from the fields `/search/users` already returns in the merged search. **No** additional
-   `GET /users/{login}` (or any other) request is made — the unauthenticated rate limit is not
-   further consumed (consistent with Story 1.5's no-refetch principle).
+1. **"Matches profile" hint when the login did not match the query.** For a **user/org** row, when the
+   current query is non-empty and the visible `login` does **not** contain it (case-insensitive), the
+   row renders a short, muted secondary line reading **"matches profile"** (or equivalent copy),
+   signalling the match is on a hidden profile field. When the login **does** contain the query (the
+   existing `<mark>` highlight is visible), **no** hint is shown. Repo rows are unaffected.
+2. **Zero new network request (data already in the response).** The hint is derived purely from the
+   already-fetched `login` + the current query; the org flag from the item's `type`. **No** additional
+   request of any kind is made (no `GET /users/{login}`, no GraphQL) — consistent with Story 1.5's
+   no-extra-request principle and the unauthenticated-by-default stance.
 3. **Organizations are labeled as such.** When a search item's `type` is `"Organization"`, the KIND
-   column reads `org` (not `user`); `type: "User"` (or a missing/other type) still reads `user`. The
-   avatar/icon treatment is unchanged (organizations keep the avatar-circle, like users).
-4. **The query match is still echoed, and now also in the secondary text.** The existing `<mark>`
-   accent highlight on the login stays. When the match is actually in the `name`/`bio` (not the
-   login), that secondary text also echoes the matched substring via the same `highlightMatch`
-   helper, so the user can see the matched characters wherever they are.
-5. **Robust, safe mapping (no injection, no crashes on odd payloads).** `name`/`bio`/`type` are read
-   defensively (unknown-shaped payloads already flow through `isRecord`/`optionalString` guards):
-   non-string or missing values normalize to `undefined`, and an item still maps successfully on the
-   existing required fields (`id`, `login`, `html_url`). The values are rendered as **text** (React
+   column reads `org` (not `user`); `type: "User"`, a missing type, or any other value still reads
+   `user`. The avatar/icon treatment is unchanged (organizations keep the avatar-circle, like users).
+4. **The query echo on the login is unchanged.** The existing `<mark>` accent highlight on the login
+   (when the query is a substring of it) stays exactly as today. The "matches profile" hint is
+   mutually exclusive with a visible login highlight (hint only appears precisely when the login does
+   *not* contain the query).
+5. **Robust, safe mapping/render (no injection, no crashes on odd payloads).** `type` is read
+   defensively (unknown-shaped payloads already flow through `isRecord`); a missing/odd `type`
+   defaults to non-organization, and an item still maps on the existing required fields (`id`,
+   `login`, `html_url`). The hint is static, adapter-owned copy rendered as **text** (React
    auto-escaping); no `dangerouslySetInnerHTML`, and any value used in a CSS/URL context stays behind
-   the existing `cssUrl` escaping. Overly long secondary text is visually truncated (ellipsis), not
-   allowed to break the row layout.
+   the existing `cssUrl` escaping. The hint line must not break the row layout (single line, muted).
 6. **Boundary respected — feature layer only, lib untouched.** All changes live in
    `src/features/github-search/`. The reusable `src/lib/autocomplete/` gets **no** GitHub knowledge:
-   the extra text is carried on the adapter's own `GithubResult` shape and rendered by the adapter's
-   `renderItem`, exactly like the existing repo `displayPath`/`description`. The `no-restricted-imports`
-   boundary (Story 0.1) stays green; no new runtime dependency.
-7. **Tests prove all of the above (FR-18).** Unit tests for `mapUserItem` assert `name`→secondary,
-   `bio` fallback, both-absent→login-only, and `type: "Organization"`→`kind`/label mapping, plus that
-   a missing/`null` `name`/`bio`/`type` does not break mapping. Adapter render tests
-   (`GithubAutocomplete.test.tsx`) assert a user row shows the display name, an org row shows `org`,
-   and the secondary text highlights the matched substring when the login did not match. Existing
-   merge/sort, selection (new-tab), and repo-row tests continue to pass unchanged (sorting still keys
-   off the bare `name`/login — the added secondary text must **not** change the sort key).
+   the org flag is carried on the adapter's own `GithubResult` shape and the hint is computed and
+   rendered by the adapter's `renderItem`. The `no-restricted-imports` boundary (Story 0.1) stays
+   green; no new runtime dependency; the sort key (bare `name`/login) is unchanged.
+7. **Tests prove all of the above (FR-18).** Unit tests for `mapUserItem` assert
+   `type: "Organization"` → org flag, and `"User"`/missing/other → not-org, without dropping the item
+   on missing fields. Adapter render tests (`GithubAutocomplete.test.tsx`) assert: a user whose login
+   does not contain the query shows the "matches profile" hint; a user whose login *does* contain the
+   query shows **no** hint (only the `<mark>`); an org row reads `org`. Existing merge/sort, selection
+   (new-tab), repo-row, and rate-limit tests continue to pass unchanged (the hint/flag must not change
+   the sort key).
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Extend the domain shape (AC: 1, 3, 6)
-  - [ ] In `src/features/github-search/types.ts`, add optional fields to `GithubResult`:
-        `secondaryText?: string` (the user display name or bio; the adapter's "why it matched" line)
-        and widen the kind/label story for organizations. Prefer a minimal, generic shape: either add
-        an `isOrganization?: boolean` flag or extend `kind` — choose the option that keeps the sort
-        key and existing `getItemKey` (`${kind}:${id}`) stable and documented. Do **not** change
-        `name` (the sort key) or `displayPath` semantics. Document each new field.
-- [ ] Task 2 — Map the new fields from the search response (AC: 1, 2, 3, 5)
-  - [ ] In `src/features/github-search/githubClient.ts` `mapUserItem`, read `name`, `bio`, and `type`
-        from the (already-fetched) item. Set `secondaryText` to `optionalString(name)` and, when that
-        is `undefined`, fall back to `optionalString(bio)`. Map `type === 'Organization'` to the
-        org label/flag chosen in Task 1. Keep the required-field guard (`id`, `login`, `html_url`)
-        unchanged — a missing `name`/`bio`/`type` must never drop the item. **No** new request.
-  - [ ] Confirm `mapRepoItem` is untouched (repos already carry `description`/`displayPath`); the sort
-        key (`name`) and merge/cap behavior in `mergeResults.ts` are unchanged.
-- [ ] Task 3 — Render the secondary text + org label (AC: 1, 3, 4, 5)
-  - [ ] In `src/features/github-search/GithubAutocomplete.tsx` `renderGithubItem`, render
-        `item.secondaryText` for user rows in the same secondary slot the design uses for a repo's
-        description/`ac-meta` (visual parity with repo rows; see design state 04). Echo the matched
-        substring in it via the existing `highlightMatch(item.secondaryText, query)`.
-  - [ ] Render the KIND column as `org` when the item is an organization, else `user`/`repo` as today.
-  - [ ] Add/adjust the CSS in `GithubAutocomplete.module.css` so long secondary text truncates with
-        ellipsis and the row height/layout is unchanged; users without secondary text look exactly as
-        before. Kinds must still be distinguishable without color (icon + label), per design.
-- [ ] Task 4 — Tests (AC: 7)
-  - [ ] Extend `src/features/github-search/githubClient.test.ts`: `name` present → `secondaryText`;
-        `name` empty/null + `bio` present → `bio`; both absent → `secondaryText` undefined; `type:
-        "Organization"` → org mapping; malformed/missing fields still map on required fields.
-  - [ ] Extend `src/features/github-search/GithubAutocomplete.test.tsx`: a user row renders the
-        display name; an org row shows the `org` KIND label; when the login does not contain the query
-        but the name does, the highlighted match appears in the secondary text; repo rows and the
-        A→Z sort/merge are unchanged.
-- [ ] Task 5 — Docs
-  - [ ] Ship the story's own doc folder per CLAUDE.md:
+- [x] Task 1 — Extend the domain shape (AC: 3, 6)
+  - [x] In `src/features/github-search/types.ts`, add an optional `isOrganization?: boolean` to
+        `GithubResult` (chosen over extending `kind` so `getItemKey` = `${kind}:${id}` and the sort
+        key stay stable). Do **not** add a name/bio field — the search response does not carry it (see
+        Background). Do **not** change `name`/`displayPath` semantics. Document the field.
+- [x] Task 2 — Map `type` from the search response (AC: 2, 3, 5)
+  - [x] In `src/features/github-search/githubClient.ts` `mapUserItem`, read `type` from the
+        already-fetched item and set `isOrganization: type === 'Organization'`. Keep the required-field
+        guard (`id`, `login`, `html_url`) unchanged — a missing/odd `type` defaults to `false` and
+        never drops the item. **No** new request. Set `isOrganization: false` on repo items for shape
+        consistency; leave `mapRepoItem` otherwise untouched.
+  - [x] Confirm the sort key (`name`) and merge/cap behavior in `mergeResults.ts` are unchanged.
+- [x] Task 3 — Render the "matches profile" hint + org label (AC: 1, 3, 4, 5)
+  - [x] In `src/features/github-search/GithubAutocomplete.tsx` `renderGithubItem`, for **user/org**
+        rows compute `loginMatches = item.name.toLowerCase().includes(query.trim().toLowerCase())`
+        (guard empty query → no hint). When the query is non-empty and `loginMatches` is false, render
+        a short, muted secondary line "matches profile" in the same secondary slot the design uses for
+        a repo's path/description (visual parity). When `loginMatches` is true, render no hint (the
+        `<mark>` on the login already shows it). Keep the copy as a single adapter-owned constant.
+  - [x] Render the KIND column as `org` when `item.isOrganization`, else `user`/`repo` as today.
+  - [x] Add CSS in `GithubAutocomplete.module.css` for the hint line (muted, single line, ellipsis if
+        needed) so the row height/layout is unchanged and rows without a hint look exactly as before.
+        Kinds must still be distinguishable without color (icon + label), per design.
+- [x] Task 4 — Tests (AC: 7)
+  - [x] Extend `src/features/github-search/githubClient.test.ts`: `type: "Organization"` → org flag;
+        `"User"`/missing/other → not org; malformed/missing fields still map on required fields.
+  - [x] Extend `src/features/github-search/GithubAutocomplete.test.tsx`: a user whose login does NOT
+        contain the query shows the "matches profile" hint; a user whose login DOES contain it shows
+        no hint (only the `<mark>`); an org row shows the `org` KIND label; repo rows and the A→Z
+        sort/merge are unchanged.
+- [x] Task 5 — Docs
+  - [x] Ship the story's own doc folder per CLAUDE.md:
         `docs/features/epic-2-github-adapter/1-6-user-match-context/` with `README.md` (what changed,
         why — the `jun`→Beomi case — and the "no extra request, read fields already in the search
         response" decision) and `MANUAL_TESTING.md` (type `jun` → user rows now show the display
         name/bio so the match is visible; organizations read `org`).
-  - [ ] If a Story 2.x GitHub-adapter feature README documents the user-row anatomy, add a note there
+  - [x] If a Story 2.x GitHub-adapter feature README documents the user-row anatomy, add a note there
         pointing to this enhancement.
-- [ ] Task 6 — Verify (AC: all)
-  - [ ] `pnpm lint && pnpm typecheck && pnpm test` all green (+ `pnpm test:e2e` if present). Manually
+- [x] Task 6 — Verify (AC: all)
+  - [x] `pnpm lint && pnpm typecheck && pnpm test` all green (+ `pnpm test:e2e` if present). Manually
         verify in `pnpm dev` on the 3.1 demo: type `jun` → user rows show a display name/bio revealing
         the match; confirm the Network panel shows **no** extra per-user requests; organizations read
         `org`; repos look unchanged.
@@ -192,20 +210,56 @@ any fix, then PR. [Source: CLAUDE.md#Working rules / #Story pipeline]
 - [Source: docs/implementation-artifacts/2-1-github-api-client.md / 2-2-merge-sort-results.md / 2-3-github-autocomplete.md — Epic 2 adapter]
 - [Source: docs/implementation-artifacts/1-5-reopen-on-focus.md — no-extra-request principle (rate limits)]
 - [Source: CLAUDE.md#Architecture boundary / #Working rules / #Story pipeline / #Documentation deliverables]
-- [Source: GitHub REST API — "Search users": each item carries nullable `name`, `bio`, `type` without a follow-up request]
+- [Source: GitHub REST "Search users" — verified live: items carry `type` but NOT `name`/`bio`; those need `/users/{login}` or token-gated GraphQL]
 
 ## Dev Agent Record
 
 ### Agent Model Used
 
+claude-opus-4-8 (1M context)
+
 ### Debug Log References
+
+- Full suite green: `pnpm lint && pnpm typecheck && pnpm test` → 15 files / 205 tests passed; `pnpm test:e2e` → 1 passed. `github-search` feature suite: 4 files / 60 tests.
+- **Key mid-implementation finding.** The original spec assumed `/search/users` returns `name`/`bio`.
+  Direct `curl` against the live API disproved this: those fields are *absent* from search items
+  (`'name' in item === false`), even for well-known accounts — they exist only on `/users/{login}`,
+  and the one-shot GraphQL alternative needs a token. The spec (and this story) were re-scoped to what
+  the response actually carries: `type` (org label) plus a login-vs-query "matches profile" hint. Zero
+  extra requests, no token, no `lib/` change.
+- Browser-verified against the live API: `jun` → 8 user rows show "matches profile" (incl. `Beomi`),
+  1 user matched via login (`<mark>`, no hint), and exactly 2 `/search/*` requests fire (no per-user
+  requests). `react` → 11 rows correctly labeled `org`, 2 `user`, 37 `repo`.
 
 ### Completion Notes List
 
+- Delivered the achievable, zero-request half: a muted "matches profile" hint when the query is not a
+  substring of the visible login, and an `org` KIND label from the item's `type`. Real name/bio was
+  found impossible without a token (documented as out of scope; a future story could add it behind an
+  opt-in token + GraphQL path).
+- `isOrganization?: boolean` added to `GithubResult` (chosen over extending `kind` to keep
+  `getItemKey`/sort key stable). Hint is computed in the adapter's `renderItem` from `login` vs the
+  current query — no profile data needed. All changes are feature-layer; `lib/` untouched;
+  `no-restricted-imports` boundary green.
+- Safety: hint is a static adapter-owned constant rendered as text; `type` read defensively (missing/
+  odd → not org); required-field guard on user items unchanged.
+
 ### File List
+
+- `src/features/github-search/types.ts` — UPDATE — `isOrganization?: boolean` on `GithubResult`.
+- `src/features/github-search/githubClient.ts` — UPDATE — `mapUserItem` maps `type` → `isOrganization`; `mapRepoItem` sets it `false`.
+- `src/features/github-search/GithubAutocomplete.tsx` — UPDATE — "matches profile" hint + `org` label in `renderGithubItem`.
+- `src/features/github-search/GithubAutocomplete.module.css` — UPDATE — `.secondary` hint style.
+- `src/features/github-search/githubClient.test.ts` — UPDATE — org-flag mapping tests.
+- `src/features/github-search/GithubAutocomplete.test.tsx` — UPDATE — hint / no-hint / org-label render tests.
+- `docs/features/epic-2-github-adapter/1-6-user-match-context/README.md` — NEW — story docs.
+- `docs/features/epic-2-github-adapter/1-6-user-match-context/MANUAL_TESTING.md` — NEW — story manual testing.
+- `docs/implementation-artifacts/1-6-user-match-context.md` — UPDATE — baseline_commit, re-scope, task checkboxes, Dev Agent Record, status.
 
 ## Change Log
 
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
-| 2026-07-10 | 0.1 | Story drafted as a follow-up: GitHub user rows now reveal the matched profile name/bio (read from the existing search response, no extra request) and label organizations, so results like `jun`→Beomi are legible. Found during Story 3.1 demo manual testing. | Łukasz (via BMAD create-story) |
+| 2026-07-10 | 0.1 | Story drafted as a follow-up: reveal the matched profile name/bio + label organizations, so results like `jun`→Beomi are legible. | Łukasz (via BMAD create-story) |
+| 2026-07-10 | 0.2 | Re-scoped after a live-API finding: `/search/users` does not return `name`/`bio` (absent, not null); real name/bio needs a token. Story now delivers the zero-request achievable set — a "matches profile" hint (login-vs-query) + org label from `type`. | Amelia (Dev) |
+| 2026-07-10 | 1.0 | Implemented org label + "matches profile" hint; tests + docs; all checks green; browser-verified on the live API. | Amelia (Dev) |

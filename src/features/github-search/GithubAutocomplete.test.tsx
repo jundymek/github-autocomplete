@@ -102,6 +102,76 @@ describe('GithubAutocomplete — merged rendering (AC 10a)', () => {
   })
 })
 
+describe('GithubAutocomplete — user match context (Story 1.6)', () => {
+  const HINT = 'matches profile'
+
+  function userHandlers(items: unknown[]) {
+    return [
+      http.get(USERS_URL, () => HttpResponse.json({ ...emptyBody, total_count: items.length, items })),
+      http.get(REPOS_URL, () => HttpResponse.json(emptyBody)),
+    ]
+  }
+
+  it('shows the "matches profile" hint when the login does not contain the query', async () => {
+    // Login "beomi" has no "jun" — the match is on a hidden profile field.
+    server.use(
+      ...userHandlers([{ id: 10, login: 'beomi', html_url: 'https://github.com/beomi', type: 'User' }]),
+    )
+    render(<GithubAutocomplete />)
+
+    typeQuery('jun')
+
+    const opt = await waitFor(() => {
+      const found = options()
+      expect(found).toHaveLength(1)
+      return found[0]
+    })
+
+    expect(within(opt).getByText('user')).toBeInTheDocument()
+    expect(within(opt).getByText(HINT)).toBeInTheDocument()
+    // Login is shown, and since "jun" isn't in it there is no <mark> highlight.
+    expect(opt.textContent).toContain('beomi')
+    expect(opt.querySelector('mark')).toBeNull()
+  })
+
+  it('shows NO hint when the login itself contains the query (the <mark> already explains it)', async () => {
+    server.use(
+      ...userHandlers([{ id: 11, login: 'junnplus', html_url: 'https://github.com/junnplus', type: 'User' }]),
+    )
+    render(<GithubAutocomplete />)
+
+    typeQuery('jun') // "jun" IS in "junnplus"
+
+    const opt = await waitFor(() => {
+      const found = options()
+      expect(found).toHaveLength(1)
+      return found[0]
+    })
+
+    expect(within(opt).queryByText(HINT)).not.toBeInTheDocument()
+    // The login highlight is present instead.
+    expect(within(opt).getByText('jun', { selector: 'mark' })).toBeInTheDocument()
+  })
+
+  it('labels organizations as "org", not "user"', async () => {
+    server.use(
+      ...userHandlers([{ id: 12, login: 'junos-org', html_url: 'https://github.com/junos-org', type: 'Organization' }]),
+    )
+    render(<GithubAutocomplete />)
+
+    typeQuery('jun') // in the login → org label is the thing under test, not the hint
+
+    const opt = await waitFor(() => {
+      const found = options()
+      expect(found).toHaveLength(1)
+      return found[0]
+    })
+
+    expect(within(opt).getByText('org')).toBeInTheDocument()
+    expect(within(opt).queryByText('user')).not.toBeInTheDocument()
+  })
+})
+
 describe('GithubAutocomplete — selection opens a new tab (AC 10b, 10c)', () => {
   const NEW_TAB_ARGS = ['_blank', 'noopener,noreferrer']
 

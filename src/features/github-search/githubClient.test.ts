@@ -106,6 +106,7 @@ describe('searchGithub — happy path mapping (AC 4, 5)', () => {
         name: 'octocat',
         displayPath: 'octocat',
         description: undefined,
+        isOrganization: false,
         avatarUrl: 'https://avatars.example/octocat.png',
         htmlUrl: 'https://github.com/octocat',
       },
@@ -117,10 +118,43 @@ describe('searchGithub — happy path mapping (AC 4, 5)', () => {
         name: 'hello-world',
         displayPath: 'octocat/hello-world',
         description: 'My first repository',
+        isOrganization: false,
         avatarUrl: 'https://avatars.example/octocat.png',
         htmlUrl: 'https://github.com/octocat/hello-world',
       },
     ])
+  })
+
+  it('flags organizations (type: "Organization") and leaves users un-flagged', async () => {
+    server.use(
+      ...okHandlers({
+        ...emptyBody,
+        items: [
+          { ...userItem, id: 1, login: 'acme', type: 'Organization' },
+          { ...userItem, id: 2, login: 'person', type: 'User' },
+          { ...userItem, id: 3, login: 'legacy' }, // no type → treated as user
+          { ...userItem, id: 4, login: 'weird', type: 'Bot' }, // unknown type → not org
+        ],
+      }),
+    )
+
+    const { users } = await searchGithub('octo', signal())
+
+    expect(users[0].isOrganization).toBe(true)
+    expect(users[1].isOrganization).toBe(false)
+    expect(users[2].isOrganization).toBe(false)
+    expect(users[3].isOrganization).toBe(false)
+  })
+
+  it('still maps a user on the required fields when type is missing', async () => {
+    server.use(
+      ...okHandlers({ ...emptyBody, items: [{ id: 9, login: 'bare', html_url: 'https://github.com/bare' }] }),
+    )
+
+    const { users } = await searchGithub('octo', signal())
+
+    expect(users).toHaveLength(1)
+    expect(users[0]).toMatchObject({ kind: 'user', name: 'bare', isOrganization: false })
   })
 
   it('surfaces the combined API total_count (sum of users + repos) for the footer', async () => {

@@ -107,6 +107,7 @@ claude-opus-4-8[1m] (Claude Opus 4.8, 1M context) via the bmad-dev-story workflo
 
 ### Debug Log References
 
+- PR: https://github.com/jundymek/github-autocomplete/pull/9
 - `pnpm lint && pnpm typecheck && pnpm test` — all green (170 tests, 11 files).
 - `pnpm test:e2e` — smoke test green (no new e2e in this story; 3.2 owns it).
 - Manual browser verification via a Playwright driver (session scratchpad, not committed) against

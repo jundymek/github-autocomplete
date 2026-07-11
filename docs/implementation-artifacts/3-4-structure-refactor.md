@@ -1,6 +1,10 @@
+---
+baseline_commit: d48220fc2696168a08310d6ae8c38e69f17cffb2
+---
+
 # Story 3.4: Structure refactor — lib public API barrel + demo country grouping
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -90,29 +94,29 @@ docs/implementation-artifacts/3-3-readme-and-deploy.md#AC 3]
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Public API barrel (AC: 1, 2)
-  - [ ] Create `src/lib/autocomplete/index.ts` with the named exports listed in AC 1 (values via
+- [x] Task 1 — Public API barrel (AC: 1, 2)
+  - [x] Create `src/lib/autocomplete/index.ts` with the named exports listed in AC 1 (values via
         `export { … } from`, types via `export type { … } from`) and the header comment.
-  - [ ] Confirm no file under `src/lib/autocomplete/` imports `./index` or `.` (leaf barrel).
-- [ ] Task 2 — Rewire consumers (AC: 3)
-  - [ ] Update the three consumer files to import from `'../../lib/autocomplete'`.
-  - [ ] Run the grep from AC 3 to prove no deep import remains outside `src/lib/`.
-- [ ] Task 3 — ESLint deep-import guard (AC: 4)
-  - [ ] Add the second `no-restricted-imports` block to `eslint.config.js` (scope: all `src`
+  - [x] Confirm no file under `src/lib/autocomplete/` imports `./index` or `.` (leaf barrel).
+- [x] Task 2 — Rewire consumers (AC: 3)
+  - [x] Update the three consumer files to import from `'../../lib/autocomplete'`.
+  - [x] Run the grep from AC 3 to prove no deep import remains outside `src/lib/`.
+- [x] Task 3 — ESLint deep-import guard (AC: 4)
+  - [x] Add the second `no-restricted-imports` block to `eslint.config.js` (scope: all `src`
         except `src/lib/**`; patterns per AC 4; message: "import from src/lib/autocomplete (the
         public barrel) — lib internals are not a public API").
-  - [ ] Verify enforcement: temporarily restore one deep import, confirm `pnpm lint` fails, revert.
-- [ ] Task 4 — Group the demo country instance (AC: 5)
-  - [ ] `git mv` the six files into `src/demo/country/`; delete the empty `src/demo/hooks/`.
-  - [ ] Fix the relative imports listed in AC 5 (movers + `CountryPanel.tsx` + `SelectedReadout.tsx`).
-- [ ] Task 5 — Docs (AC: 6, 7 + deliverables below)
-  - [ ] Update `architecture.md` §3.2 tree (barrel + `demo/country/`).
-  - [ ] Add the dependency line to Story 3.3's Dev Notes.
-  - [ ] Create `docs/features/epic-3-demo-e2e-launch/3-4-structure-refactor/README.md` (what was
+  - [x] Verify enforcement: temporarily restore one deep import, confirm `pnpm lint` fails, revert.
+- [x] Task 4 — Group the demo country instance (AC: 5)
+  - [x] `git mv` the six files into `src/demo/country/`; delete the empty `src/demo/hooks/`.
+  - [x] Fix the relative imports listed in AC 5 (movers + `CountryPanel.tsx` + `SelectedReadout.tsx`).
+- [x] Task 5 — Docs (AC: 6, 7 + deliverables below)
+  - [x] Update `architecture.md` §3.2 tree (barrel + `demo/country/`).
+  - [x] Add the dependency line to Story 3.3's Dev Notes.
+  - [x] Create `docs/features/epic-3-demo-e2e-launch/3-4-structure-refactor/README.md` (what was
         built, files touched, key decisions — including the recorded non-goals and their rationale).
-- [ ] Task 6 — Verify (AC: 8)
-  - [ ] `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e` all green.
-  - [ ] `pnpm dev` spot-check: both demo instances search, navigate and select as before.
+- [x] Task 6 — Verify (AC: 8)
+  - [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e` all green.
+  - [x] `pnpm dev` spot-check: both demo instances search, navigate and select as before.
 
 ## Non-goals (deliberate, recorded as part of this story)
 
@@ -216,14 +220,82 @@ second-pass review + verified triage), re-run the full verification after any fi
 
 ### Agent Model Used
 
+Claude Fable 5 (claude-fable-5) via Claude Code.
+
+### Implementation Plan
+
+1. Create the barrel `src/lib/autocomplete/index.ts` (explicit named exports per AC 1, header
+   comment, leaf — verified no lib-internal file imports it).
+2. Rewire the three consumers (five deep imports) to `'../../lib/autocomplete'`; prove with the
+   AC 3 grep.
+3. Add the inward `no-restricted-imports` block to `eslint.config.js`; prove enforcement by
+   restoring one deep import (lint fails with the barrel message), then revert.
+4. `git mv` the six country files into `src/demo/country/`, remove empty `src/demo/hooks/`, fix
+   the relative imports listed in AC 5.
+5. Docs: architecture §3.2 tree, Story 3.3 dependency note, feature README (incl. non-goals).
+6. Full verification + `pnpm dev` spot-check, then the pre-PR review gate.
+
 ### Debug Log References
+
+- AC 3 grep proof: `grep -rn "lib/autocomplete/" src --include='*.ts*' | grep -v "^src/lib"`
+  returns nothing.
+- AC 4 enforcement trial: restoring `'../../lib/autocomplete/types'` in `describeError.ts` made
+  `pnpm lint` fail with "import from src/lib/autocomplete (the public barrel) — lib internals are
+  not a public API"; reverted.
 
 ### Completion Notes List
 
+- Structure-only story delivered with zero behavior change: no test assertion was modified — only
+  import paths in moved/consumer files.
+- Verification: `pnpm lint`, `pnpm typecheck`, `pnpm test` (15 files, 205 tests) and
+  `pnpm test:e2e` (14 tests) all green.
+- `pnpm dev` spot-check executed via a scripted browser session against the dev server (GitHub API
+  stubbed for determinism): GitHub instance renders options and ArrowDown highlights
+  (`aria-activedescendant` set); country instance filters "pol", ArrowDown+Enter selects Poland
+  into the readout. Both instances behave as before.
+- Barrel is a leaf: no file under `src/lib/autocomplete/` imports `./index` or `.`.
+- ESLint now guards both AR-2 directions: existing outward block untouched; new inward block scoped
+  `files: ['src/**/*.{ts,tsx}'], ignores: ['src/lib/**']`.
+
+### Pre-PR review gate (security review + independent second pass + triage)
+
+- **Security review:** no findings. The diff adds no runtime logic, input handling, network/DOM
+  changes, or secrets — the barrel is pure named re-exports and the ESLint block is lint-time only.
+- **Independent second-pass review (codex-rescue):** confirmed no accidental behavior change, no
+  missed deep imports, barrel complete vs `types.ts` (2 values + 14 types, leaf), moved-file
+  imports consistent. Two findings triaged:
+  1. *(med)* Inward ESLint guard covers only `src/**`, so `e2e/*.spec.ts` could deep-import lib
+     internals unflagged. **Triaged: by design, documented false positive.** AC 4 prescribes
+     exactly this scope (`files: ['src/**/*.{ts,tsx}'], ignores: ['src/lib/**']`), and it was
+     verified empirically that `e2e/` imports nothing from `src/` at all (specs import only
+     `./helpers/*` and Playwright — they drive the app through the browser). Widening the scope
+     would exceed the story spec; noted as a possible future hardening.
+  2. *(low)* Story status said `in-progress` while all tasks were checked. **Fixed:** status is a
+     workflow-managed field; set to `review` at completion per the dev-story workflow.
+- Full verification re-run after triage: lint, typecheck, unit (205), e2e (14) — all green.
+
 ### File List
+
+- `src/lib/autocomplete/index.ts` — NEW — public API barrel (AC 1, 2).
+- `src/features/github-search/GithubAutocomplete.tsx` — UPDATE — barrel imports (AC 3).
+- `src/features/github-search/describeError.ts` — UPDATE — barrel import (AC 3).
+- `src/demo/components/CountryPanel.tsx` — UPDATE — barrel import + `../country/*` paths (AC 3, 5).
+- `src/demo/components/SelectedReadout.tsx` — UPDATE — `../country/countries` path (AC 5).
+- `src/demo/country/countryAdapter.ts` — MOVED from `src/demo/` (git mv; content unchanged).
+- `src/demo/country/countryAdapter.test.ts` — MOVED from `src/demo/` (git mv; content unchanged).
+- `src/demo/country/countries.ts` — MOVED from `src/demo/` (git mv; content unchanged).
+- `src/demo/country/countryRenderItem.tsx` — MOVED from `src/demo/` (git mv; content unchanged).
+- `src/demo/country/countryInstance.test.tsx` — MOVED from `src/demo/` (git mv; import path `../components/CountryPanel`).
+- `src/demo/country/useSelectedCountry.ts` — MOVED from `src/demo/hooks/` (git mv; import path `./countries`); empty `src/demo/hooks/` removed.
+- `eslint.config.js` — UPDATE — inward deep-import guard (AC 4).
+- `docs/planning-artifacts/architecture.md` — UPDATE — §3.2 tree (AC 6).
+- `docs/implementation-artifacts/3-3-readme-and-deploy.md` — UPDATE — dependency note (AC 7).
+- `docs/features/epic-3-demo-e2e-launch/3-4-structure-refactor/README.md` — NEW — story docs.
+- `docs/implementation-artifacts/3-4-structure-refactor.md` — UPDATE — Dev Agent Record, checkboxes, status.
 
 ## Change Log
 
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
 | 2026-07-11 | 0.1 | Follow-up story drafted from the pre-README structure review: add the lib's public API barrel (`index.ts`) + ESLint inward guard, group the demo country instance under `src/demo/country/`, record the rejected `mergeResults.ts` split as a non-goal. Must land before Story 3.3. | Łukasz (via BMAD create-story) |
+| 2026-07-11 | 1.0 | Story implemented: barrel + inward ESLint guard (enforcement proven by trial) + `demo/country/` grouping (git mv) + docs. Zero behavior change; full verification green (lint, typecheck, 205 unit tests, 14 e2e, dev spot-check). | Claude Fable 5 (dev-story) |

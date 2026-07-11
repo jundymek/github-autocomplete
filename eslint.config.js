@@ -50,5 +50,26 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // AR-2 (inward direction): src/lib/autocomplete/index.ts is the lib's only public API.
+    // Consumers outside src/lib/ must import the barrel, never lib internals — so internal
+    // files stay renamable and the enumerated barrel exports remain the deliberate contract.
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/lib/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/lib/autocomplete/*', '**/lib/autocomplete/**'],
+              message:
+                'import from src/lib/autocomplete (the public barrel) — lib internals are not a public API',
+            },
+          ],
+        },
+      ],
+    },
+  },
   eslintConfigPrettier,
 )

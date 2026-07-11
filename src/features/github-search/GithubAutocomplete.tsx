@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 
-import { Autocomplete } from '../../lib/autocomplete/Autocomplete'
-import type { AutocompleteFooterContext } from '../../lib/autocomplete/types'
+import { Autocomplete } from '../../lib/autocomplete'
+import type { AutocompleteFooterContext } from '../../lib/autocomplete'
 import styles from './GithubAutocomplete.module.css'
 import { describeAutocompleteError } from './describeError'
 import { createFetchSuggestionsWithTotal } from './mergeResults'

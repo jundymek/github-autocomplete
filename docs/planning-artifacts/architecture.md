@@ -292,6 +292,7 @@ them differently. Deviations require updating this document first.
 ├── docs/                     # task.md, planning-artifacts/, design/, features/, implementation-artifacts/
 ├── src/
 │   ├── lib/autocomplete/     # THE reusable deliverable (no GitHub, no app imports)
+│   │   ├── index.ts                  # public API barrel — the only consumer import path
 │   │   ├── useAutocomplete.ts        # headless hook: state machine, debounce, abort, keyboard
 │   │   ├── Autocomplete.tsx          # generic presentational component
 │   │   ├── Autocomplete.module.css   # scoped styles, all --ac-* tokens with fallbacks
@@ -303,7 +304,7 @@ them differently. Deviations require updating this document first.
 │   │   ├── GithubAutocomplete.tsx    # wired instance: renderItem, onSelect (new tab)
 │   │   ├── types.ts                  # GithubResult union, GithubSearchError union
 │   │   └── *.test.ts(x)
-│   ├── demo/                         # second data source (countries), demo-only components
+│   ├── demo/                         # demo-only components; country/ groups the second data source (countries instance)
 │   ├── App.tsx                       # sandbox stage: both instances, demo styling
 │   └── main.tsx
 ├── eslint.config.js, vite.config.ts, vitest.config/setup (MSW), playwright.config.ts

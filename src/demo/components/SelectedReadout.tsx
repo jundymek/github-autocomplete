@@ -1,4 +1,4 @@
-import type { Country } from '../countries'
+import type { Country } from '../country/countries'
 
 /** Props for the country instance's selection readout. */
 export type SelectedReadoutProps = {

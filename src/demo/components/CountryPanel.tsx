@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react'
 
-import { Autocomplete } from '../../lib/autocomplete/Autocomplete'
-import type { AutocompleteFooterContext } from '../../lib/autocomplete/types'
-import type { Country } from '../countries'
-import { fetchSuggestions } from '../countryAdapter'
-import { renderCountryItem } from '../countryRenderItem'
-import { useSelectedCountry } from '../hooks/useSelectedCountry'
+import { Autocomplete } from '../../lib/autocomplete'
+import type { AutocompleteFooterContext } from '../../lib/autocomplete'
+import type { Country } from '../country/countries'
+import { fetchSuggestions } from '../country/countryAdapter'
+import { renderCountryItem } from '../country/countryRenderItem'
+import { useSelectedCountry } from '../country/useSelectedCountry'
 import { Panel } from './Panel'
 import { SelectedReadout } from './SelectedReadout'
 

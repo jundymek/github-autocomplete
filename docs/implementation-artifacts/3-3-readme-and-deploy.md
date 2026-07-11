@@ -98,6 +98,9 @@ Part of Definition of Done (see CLAUDE.md). Create the task documentation folder
 **Prerequisite & dependencies.** Depends on Story 3.1 (demo to deploy) and 3.2 (e2e green), and
 documents/deploys the finished whole. Ideally the last story of the project. [Source:
 docs/planning-artifacts/epics.md#Story 3.3 / #Story 3.1 / #Story 3.2]
+Also depends on Story 3.4 (structure refactor): AC 3's Component API section documents
+barrel-based imports (`import { Autocomplete } from '<pkg>/lib/autocomplete'`), which only exist
+once 3.4 has landed. [Source: docs/implementation-artifacts/3-4-structure-refactor.md#AC 7]
 
 **Branch & PR.** `story/3-3-readme-and-deploy` → `master`, squash. Commit e.g.
 `docs(3.3): add readme and github pages deployment` (workflow addition may be `ci(3.3): …`). **No AI

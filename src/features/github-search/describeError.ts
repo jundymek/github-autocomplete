@@ -1,4 +1,4 @@
-import type { AutocompleteError, AutocompleteErrorContent } from '../../lib/autocomplete/types'
+import type { AutocompleteError, AutocompleteErrorContent } from '../../lib/autocomplete'
 import type { GithubSearchError } from './types'
 
 /**

@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 
-import type { Country } from '../countries'
+import type { Country } from './countries'
 
 /**
  * Owns the country instance's "selected" readout state (Story 3.1, AC 4).

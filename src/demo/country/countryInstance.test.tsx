@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 
-import { CountryPanel } from './components/CountryPanel'
+import { CountryPanel } from '../components/CountryPanel'
 
 /**
  * Integration test for the demo's country instance (Story 3.1, AC 10).

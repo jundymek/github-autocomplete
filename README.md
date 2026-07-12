@@ -218,10 +218,10 @@ CI, and live demo on one platform with zero extra accounts for the evaluator.
 
 Performed by the operator at release time (CI cannot make a repo public):
 
-- [ ] Repository is **public**
-- [ ] GitHub Pages enabled (Settings → Pages → Source: *GitHub Actions*), first deploy green
-- [ ] Live demo URL serves **both instances** and is linked at the top of this README
-- [ ] CI green on `master`
+- [x] Repository is **public**
+- [x] GitHub Pages enabled (Settings → Pages → Source: *GitHub Actions*), first deploy green
+- [x] Live demo URL serves **both instances** and is linked at the top of this README
+- [x] CI green on `master`
 
 ## Repository map
 

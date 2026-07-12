@@ -1,6 +1,10 @@
+---
+baseline_commit: 9622584d46125de479a25b876c5ea751025292e9
+---
+
 # Story 3.3: README and GitHub Pages deployment
 
-Status: Approved
+Status: review
 
 ## Story
 
@@ -64,20 +68,20 @@ NFR-6; SM-1, SM-2).
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Root README content (AC: 1, 2, 3, 4, 6, 7)
-  - [ ] Write/extend the root `README.md`: intro + live-demo link placeholder; quick start (pnpm install/dev + lint/typecheck/test/test:e2e matrix, Node 22); component API tables (`Autocomplete<T>` props, `useAutocomplete<T>` options + `{ state, handlers }`, `--ac-*` token table from 0.3/1.3); three-layer architecture sketch + import rule; testing-pyramid section; rate-limit + `VITE_GITHUB_TOKEN` note with never-commit warning.
-  - [ ] Ensure every command and relative link resolves on a clean clone.
-- [ ] Task 2 — Decisions section (AC: 5)
-  - [ ] Add a "Decisions" section summarizing D1–D5 with a one-paragraph rationale each, sourced from PRD §5/§9 and architecture AR-7/AR-8. Optionally mention Vercel as the documented-not-chosen deploy alternative (AR-14).
-- [ ] Task 3 — Vite base from env (AC: 8)
-  - [ ] Update `vite.config.ts` to `base: process.env.VITE_BASE ?? '/'` (env only; do not hardcode the repo path). Confirm local `pnpm dev`/`pnpm build` still default to base `/`.
-- [ ] Task 4 — GitHub Pages workflow (AC: 8)
-  - [ ] Create `.github/workflows/pages.yml` triggered on push to `master` (+ `workflow_dispatch`): checkout → pnpm/action-setup + setup-node (Node 22, cache) → `pnpm install --frozen-lockfile` → `VITE_BASE=/github-autocomplete/ pnpm build` → `actions/configure-pages` → `actions/upload-pages-artifact` (`dist/`) → `actions/deploy-pages`. Set `permissions: { contents: read, pages: write, id-token: write }`, `concurrency`, and the `github-pages` environment. Keep it separate from `ci.yml`.
-- [ ] Task 5 — Release checklist (AC: 9)
-  - [ ] Add a release checklist (README or task README): repo made public; Pages enabled + first deploy green; real demo URL pasted into the README live-demo link; CI green on `master`. Mark these as release-step actions.
-- [ ] Task 6 — Documentation deliverables (see below)
-- [ ] Task 7 — Verify (AC: all)
-  - [ ] `pnpm build` succeeds locally at base `/`; simulate the Pages build with `VITE_BASE=/github-autocomplete/ pnpm build` and confirm asset URLs carry the sub-path. Markdown renders; links resolve. (The live-URL check is a human release step — see MANUAL_TESTING.md.)
+- [x] Task 1 — Root README content (AC: 1, 2, 3, 4, 6, 7)
+  - [x] Write/extend the root `README.md`: intro + live-demo link placeholder; quick start (pnpm install/dev + lint/typecheck/test/test:e2e matrix, Node 22); component API tables (`Autocomplete<T>` props, `useAutocomplete<T>` options + `{ state, handlers }`, `--ac-*` token table from 0.3/1.3); three-layer architecture sketch + import rule; testing-pyramid section; rate-limit + `VITE_GITHUB_TOKEN` note with never-commit warning.
+  - [x] Ensure every command and relative link resolves on a clean clone.
+- [x] Task 2 — Decisions section (AC: 5)
+  - [x] Add a "Decisions" section summarizing D1–D5 with a one-paragraph rationale each, sourced from PRD §5/§9 and architecture AR-7/AR-8. Optionally mention Vercel as the documented-not-chosen deploy alternative (AR-14).
+- [x] Task 3 — Vite base from env (AC: 8)
+  - [x] Update `vite.config.ts` to `base: process.env.VITE_BASE ?? '/'` (env only; do not hardcode the repo path). Confirm local `pnpm dev`/`pnpm build` still default to base `/`.
+- [x] Task 4 — GitHub Pages workflow (AC: 8)
+  - [x] Create `.github/workflows/pages.yml` triggered on push to `master` (+ `workflow_dispatch`): checkout → pnpm/action-setup + setup-node (Node 22, cache) → `pnpm install --frozen-lockfile` → `VITE_BASE=/github-autocomplete/ pnpm build` → `actions/configure-pages` → `actions/upload-pages-artifact` (`dist/`) → `actions/deploy-pages`. Set `permissions: { contents: read, pages: write, id-token: write }`, `concurrency`, and the `github-pages` environment. Keep it separate from `ci.yml`.
+- [x] Task 5 — Release checklist (AC: 9)
+  - [x] Add a release checklist (README or task README): repo made public; Pages enabled + first deploy green; real demo URL pasted into the README live-demo link; CI green on `master`. Mark these as release-step actions.
+- [x] Task 6 — Documentation deliverables (see below)
+- [x] Task 7 — Verify (AC: all)
+  - [x] `pnpm build` succeeds locally at base `/`; simulate the Pages build with `VITE_BASE=/github-autocomplete/ pnpm build` and confirm asset URLs carry the sub-path. Markdown renders; links resolve. (The live-URL check is a human release step — see MANUAL_TESTING.md.)
 
 ## Documentation deliverables
 
@@ -176,13 +180,48 @@ them so nothing is missed; CI's role is only the green-on-`master` item. [Source
 
 ### Agent Model Used
 
+Claude Fable 5 (claude-fable-5) via Claude Code
+
 ### Debug Log References
+
+None — no debugging required. Both builds verified: default `pnpm build` emits `/assets/...`
+URLs; `VITE_BASE=/github-autocomplete/ pnpm build` emits `/github-autocomplete/assets/...`.
 
 ### Completion Notes List
 
+- Implementation plan: (1) root README (intro + live link, quick start, API tables from
+  `src/lib/autocomplete/types.ts` + `tokens.css`, architecture + import rule, D1–D5, testing
+  pyramid, rate-limit/token, deployment + release checklist); (2) `vite.config.ts` base from
+  `VITE_BASE` env; (3) `pages.yml` build+deploy jobs via official OIDC Pages flow; (4) story docs.
+- Repo slug confirmed as `github-autocomplete` (remote `jundymek/github-autocomplete`), so the
+  live URL `https://jundymek.github.io/github-autocomplete/` was written directly instead of a
+  placeholder (AC 1); it goes live at the release step.
+- D4 wording verified against the code: the dropdown genuinely renders via `createPortal` to
+  `document.body` (`Autocomplete.tsx`); the in-place fallback was not needed and the README says so.
+- `pages.yml` runs no tests (CI gates `master`); `concurrency: group: pages` without
+  cancel-in-progress per the official deploy-pages guidance.
+- Docs-only story: no new automated tests (spec Task 7 defines verification as build checks +
+  full suite green). Full suite re-run green: lint, typecheck, 205 unit/integration, 14 e2e.
+- **Pre-PR review gate executed:** (1) security review — no findings (workflow triggers are
+  push/dispatch only, least-privilege OIDC permissions, no secrets in the diff, no untrusted
+  interpolation); (2) independent Codex second-pass review — 2 findings, both verified real and
+  fixed: [med] quick start claimed green-on-clean-clone while `test:e2e` needs a one-time
+  Playwright browser download → made `pnpm exec playwright install chromium` an explicit step;
+  [low] import example `'./lib/autocomplete'` not runnable as written → now names the barrel path
+  `src/lib/autocomplete/index.ts` and uses the in-repo consumer form. No false positives to
+  document. Full suite re-run green after the fixes.
+
 ### File List
+
+- `README.md` — NEW — root README (evaluator entry point)
+- `vite.config.ts` — UPDATE — `base: process.env.VITE_BASE ?? '/'`
+- `.github/workflows/pages.yml` — NEW — GitHub Pages build + deploy workflow
+- `docs/features/epic-3-demo-e2e-launch/3-3-readme-and-deploy/README.md` — NEW — story docs
+- `docs/features/epic-3-demo-e2e-launch/3-3-readme-and-deploy/MANUAL_TESTING.md` — NEW — release-time manual checks
+- `docs/implementation-artifacts/3-3-readme-and-deploy.md` — UPDATE — Dev Agent Record, status
 
 ## Change Log
 
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
+| 2026-07-12 | 1.0 | Root README, Vite base-from-env, GitHub Pages workflow, story docs; review gate passed (2 Codex findings fixed) | Claude (dev-story) |

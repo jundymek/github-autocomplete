@@ -16,6 +16,12 @@ const DEFAULT_PLACEHOLDER = 'Search…'
 const DEFAULT_LABEL = 'Search'
 const DEFAULT_CLEAR_LABEL = 'Clear'
 const GAP_BELOW_INPUT_PX = 6
+/** Breathing room kept between the popup edge and the viewport edge. */
+const VIEWPORT_MARGIN_PX = 8
+/** ≈ 3 result rows + popup chrome — the smallest popup still worth showing
+ *  below the input; under this floor the popup flips above when the space
+ *  above is larger (Story 3.10). */
+const MIN_POPUP_MAX_HEIGHT_PX = 160
 const SKELETON_ROW_COUNT = 3
 
 /**
@@ -120,6 +126,8 @@ function defaultFooter(context: AutocompleteFooterContext): ReactNode {
  * `active` becomes true and re-measured on `scroll` (capture, to catch
  * scrolling ancestors) and `resize`. `position: fixed` works directly off
  * `getBoundingClientRect()` viewport coordinates — no scroll-offset math.
+ * Every pass also clamps the popup's `maxHeight` to the free viewport space
+ * and flips it above the input when below is too tight (Story 3.10).
  * The same measurement pass bridges the computed `--ac-*` token values from
  * `anchor`'s cascade onto the popup (see {@link AC_TOKENS}).
  */
@@ -136,11 +144,23 @@ function usePopupStyle(
       const el = anchor.current
       if (!el) return
       const rect = el.getBoundingClientRect()
+      // Viewport fit (Story 3.10): clamp the popup to the free space on the
+      // chosen side, flipping above the input only when below is under the
+      // usable floor AND above is strictly larger (below is preferred).
+      const spaceBelow = window.innerHeight - rect.bottom - GAP_BELOW_INPUT_PX - VIEWPORT_MARGIN_PX
+      const spaceAbove = rect.top - GAP_BELOW_INPUT_PX - VIEWPORT_MARGIN_PX
+      const flipAbove = spaceBelow < MIN_POPUP_MAX_HEIGHT_PX && spaceAbove > spaceBelow
+      // The inactive side is an explicit 'auto' so the setStyle memo guard
+      // compares identical key sets across flip states.
       const next: Record<string, string | number> = {
         position: 'fixed',
-        top: rect.bottom + GAP_BELOW_INPUT_PX,
+        // bottom-anchoring when flipped keeps the gap to the input constant
+        // while the popup grows upward — no measure-after-render second pass.
+        top: flipAbove ? 'auto' : rect.bottom + GAP_BELOW_INPUT_PX,
+        bottom: flipAbove ? window.innerHeight - rect.top + GAP_BELOW_INPUT_PX : 'auto',
         left: rect.left,
         width: rect.width,
+        maxHeight: Math.max(flipAbove ? spaceAbove : spaceBelow, 0),
       }
       const computed = getComputedStyle(el)
       for (const token of AC_TOKENS) {

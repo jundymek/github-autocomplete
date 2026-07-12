@@ -4,7 +4,7 @@ baseline_commit: b8ae32ce7be796cc9bcde2606b6624095034bdc4
 
 # Story 3.7: Close the popup on selection — one "accept" path that dismisses the dropdown
 
-Status: draft
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -90,26 +90,26 @@ mirrors); CLAUDE.md#Architecture boundary]
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Hook: close-on-accept (AC: 1, 2, 3, 4) — test-first
-  - [ ] Add the hook tests from AC 7 (red): Enter-accept and click-accept close + clear + keep
+- [x] Task 1 — Hook: close-on-accept (AC: 1, 2, 3, 4) — test-first
+  - [x] Add the hook tests from AC 7 (red): Enter-accept and click-accept close + clear + keep
         query/items/status + `onSelect` once + ARIA collapse via `getInputProps()`.
-  - [ ] Extend the single `selectItem` path so the state update that accepts an item also sets
+  - [x] Extend the single `selectItem` path so the state update that accepts an item also sets
         `isOpen:false` and `highlightedIndex:null`; keep `onSelect(item)` firing exactly once
         (green). One accept path, zero duplication.
-- [ ] Task 2 — Component + adapter behavior (AC: 5, 7) — test-first
-  - [ ] Add the RTL + adapter tests (red): listbox gone / `aria-expanded=false` after Enter and
+- [x] Task 2 — Component + adapter behavior (AC: 5, 7) — test-first
+  - [x] Add the RTL + adapter tests (red): listbox gone / `aria-expanded=false` after Enter and
         click; reopen-on-focus still re-shows results; GitHub adapter closes on select.
-  - [ ] Confirm no component code change is needed beyond deriving from the corrected hook state
+  - [x] Confirm no component code change is needed beyond deriving from the corrected hook state
         (green). If a component change *is* required, it is a smell — the hook should own this.
-- [ ] Task 3 — E2E (AC: 8)
-  - [ ] Extend `e2e/newtab.spec.ts` with a collapsed-after-select assertion; re-run axe.
-- [ ] Task 4 — Verify (AC: 6, 9)
-  - [ ] Full suite: `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e`.
-  - [ ] `pnpm dev` spot-check on BOTH instances: select by keyboard and by mouse; dropdown closes;
+- [x] Task 3 — E2E (AC: 8)
+  - [x] Extend `e2e/newtab.spec.ts` with a collapsed-after-select assertion; re-run axe.
+- [x] Task 4 — Verify (AC: 6, 9)
+  - [x] Full suite: `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e`.
+  - [x] `pnpm dev` spot-check on BOTH instances: select by keyboard and by mouse; dropdown closes;
         refocus reopens the results (1.5).
-- [ ] Task 5 — Docs (deliverables below)
-  - [ ] `docs/features/epic-3-demo-e2e-launch/3-7-close-popup-on-select/README.md`.
-  - [ ] `docs/features/epic-3-demo-e2e-launch/3-7-close-popup-on-select/MANUAL_TESTING.md`
+- [x] Task 5 — Docs (deliverables below)
+  - [x] `docs/features/epic-3-demo-e2e-launch/3-7-close-popup-on-select/README.md`.
+  - [x] `docs/features/epic-3-demo-e2e-launch/3-7-close-popup-on-select/MANUAL_TESTING.md`
         (keyboard accept path; pointer accept path; verify collapse + reopen-on-focus; both instances).
 
 ## Non-goals (deliberate)
@@ -204,27 +204,99 @@ triage), re-run the full verification after any fix, then PR.
 
 ### Agent Model Used
 
-_(to be filled by the dev agent)_
+Claude Opus 4.8 (1M context) — `claude-opus-4-8[1m]`.
 
 ### Implementation Plan
 
-_(to be filled by the dev agent)_
+1. Verify current state matches Dev Notes (commit HEAD): `selectItem` only calls
+   `onSelect(item)`, `getInputProps()` already derives `aria-expanded`/`aria-activedescendant`
+   from state — confirmed.
+2. Test-first (RED): add hook tests (Enter/click accept close + clear highlight + keep
+   query/items/status + `onSelect` once + ARIA collapse) to `useAutocomplete.keyboard.test.tsx`;
+   confirm the collapse assertions fail before the fix.
+3. GREEN: in `selectItem`, add a single `setState((prev) => ({ ...prev, isOpen: false,
+   highlightedIndex: null }))` before the existing `onSelect(item)` — close then notify, one path.
+4. Component + adapter tests: listbox gone / `aria-expanded=false` after Enter and click;
+   reopen-on-focus (1.5) re-shows results with no refetch; GitHub adapter select closes + opens
+   tab. Confirm no component/adapter source change is needed (boundary proof).
+5. E2E: extend the Enter and click new-tab flows in `newtab.spec.ts` with a collapsed assertion.
+6. Full verification + real-browser spot-check of both instances.
+7. Pre-PR review gate (security + codex-rescue + triage), then docs, Dev Agent Record, PR.
 
 ### Debug Log References
 
-_(to be filled by the dev agent)_
+- RED confirmed: `pnpm vitest run useAutocomplete.keyboard.test.tsx -t "Story 3.7"` → 2 of 3
+  new tests failed (both collapse assertions) before the fix; the reopen-on-focus guard passed
+  (items already survived), proving it is a true regression guard.
+- No existing test asserted the popup stays open post-select, so AC 6 required no stale-assertion
+  edits (the dismiss test's `popup()`-not-null check is *before* click, a pre-close guard).
 
 ### Completion Notes List
 
-_(to be filled by the dev agent)_
+- **The fix is a durable close in the lib layer.** `selectItem` cancels pending work
+  (`clearDebounceTimer()` + `abortInFlight()`), collapses the popup (`isOpen:false`,
+  `highlightedIndex:null`) in a single `setState`, then calls `onSelect(item)` once in the handler
+  (not inside the updater — StrictMode double-fire safety). Both Enter and click already route
+  through `selectItem`, so there is exactly one "accept" definition. The pending-work teardown was
+  added after the codex-rescue review found accept could otherwise reopen the popup when a debounce
+  was queued at accept time (see Pre-PR Review Gate); it preserves the AC 2 invariant since neither
+  `clearDebounceTimer` nor `abortInFlight` mutates `query`/`items`/`status`.
+- **Zero `src/features/` or `src/demo/` behavior change.** The GitHub adapter and country demo
+  instance inherit the close for free; their test edits only *assert* the corrected collapse.
+  The architecture boundary held — this is the same reuse proof as `clear()` (3.6).
+- **Query/items/status preserved**, so reopen-on-focus (Story 1.5) still re-shows the settled
+  results without a refetch — verified in the hook test, component test, and the browser spot-check.
+- **Full verification green:** `pnpm lint`, `pnpm typecheck`, `pnpm test` (226 passing),
+  `pnpm test:e2e` (14 passing incl. the two extended newtab flows; axe clean).
+- **Browser spot-check executed** against the preview build on both instances, keyboard + mouse
+  (16 assertions): dropdown opens → closes on accept (`aria-expanded="false"`, 0 options) → query
+  preserved → reopen-on-focus re-shows the same results. All 16 passed. (See MANUAL_TESTING.md.)
 
 ### Pre-PR Review Gate
 
-_(to be filled by the dev agent)_
+- **Security review (`/security-review`):** clean — no HIGH/MEDIUM findings. The only production
+  change is a client-side React UI-state collapse; no new input/data-flow sink, `window.open`
+  `noopener,noreferrer` handling untouched, no secrets/auth/crypto surface. Other changed files
+  are tests and docs (excluded).
+- **Independent second-pass review (`codex:codex-rescue`) over the story diff:** raised one **High**
+  finding (no Med; one Low that the High's fix subsumes).
+  - **High — accept did not cancel a queued debounce, so the popup could reopen behind the
+    selection.** A new qualifying keystroke keeps the *previous* results open (`onInputChange` only
+    changes `query`/`highlightedIndex`, leaving `isOpen`/`items`) and arms a ~300ms debounce. If the
+    user accepts a still-visible option in that window, the first `selectItem` closed UI state but
+    left the timer armed; `startFetch` then fired ~300ms later and reopened the popup — violating
+    AC 1 ("selection closes the popup").
+  - **Low — no test exercised accept during a pending debounce**, so the above was invisible to the
+    suite.
+- **Triage (verified empirically, not implemented blindly):**
+  - The High finding is **REAL — confirmed by a red test** (`useAutocomplete.keyboard.test.tsx`,
+    "cancels a debounced fetch queued before accept…"): before the fix `fetchSuggestions` was called
+    twice (the queued fetch fired post-accept) and the listbox reopened. **Fix:** `selectItem` now
+    calls `clearDebounceTimer()` + `abortInFlight()` before the close+notify — the same pending-work
+    teardown `close()` and `resetToInitial()` already use. It preserves the AC 2 invariant
+    (`query`/`items`/`status` untouched — neither call mutates those) and is a harmless no-op at a
+    genuinely settled accept. The green test now proves the popup stays closed and no second fetch
+    fires. This also **resolves the Low finding** (the pending-debounce accept path is now covered).
+  - Security-focus notes from the review (no `lib/`→`features/` leak; `window.open(..., 'noopener,noreferrer')`
+    unchanged; no StrictMode double-fire) matched my own analysis — no action needed.
+- **Re-verified after the fix:** `pnpm lint`, `pnpm typecheck`, `pnpm test` (226 passing, +1 for the
+  new guard), `pnpm test:e2e` (14 passing). All green.
 
 ### File List
 
-_(to be filled by the dev agent)_
+- `src/lib/autocomplete/useAutocomplete.ts` — UPDATE — `selectItem` collapses the popup (close +
+  clear highlight) in the same handler that calls `onSelect(item)`.
+- `src/lib/autocomplete/useAutocomplete.keyboard.test.tsx` — UPDATE — hook close-on-accept tests
+  (Enter/click; ARIA collapse; preserved results for reopen-on-focus).
+- `src/lib/autocomplete/Autocomplete.test.tsx` — UPDATE — component: listbox gone after accept;
+  reopen-on-focus (1.5) regression guard.
+- `src/features/github-search/GithubAutocomplete.test.tsx` — UPDATE — adapter: select closes the
+  dropdown in addition to opening the new tab (Enter + click).
+- `e2e/newtab.spec.ts` — UPDATE — collapsed-after-select assertions on the Enter and click flows.
+- `docs/features/epic-3-demo-e2e-launch/3-7-close-popup-on-select/README.md` — NEW.
+- `docs/features/epic-3-demo-e2e-launch/3-7-close-popup-on-select/MANUAL_TESTING.md` — NEW.
+- `docs/implementation-artifacts/3-7-close-popup-on-select.md` — UPDATE — status, tasks, Dev Agent
+  Record.
 
 ## Change Log
 

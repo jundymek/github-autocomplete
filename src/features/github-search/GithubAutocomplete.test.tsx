@@ -189,6 +189,10 @@ describe('GithubAutocomplete — selection opens a new tab (AC 10b, 10c)', () =>
 
     expect(openSpy).toHaveBeenCalledTimes(1)
     expect(openSpy).toHaveBeenCalledWith('https://github.com/facebook/react', ...NEW_TAB_ARGS)
+    // Story 3.7: accept collapses the popup — the dropdown is not left expanded
+    // behind the new tab.
+    expect(options()).toHaveLength(0)
+    expect(input()).toHaveAttribute('aria-expanded', 'false')
   })
 
   it('click selection opens the same htmlUrl with the identical args', async () => {
@@ -203,6 +207,9 @@ describe('GithubAutocomplete — selection opens a new tab (AC 10b, 10c)', () =>
 
     expect(openSpy).toHaveBeenCalledTimes(1)
     expect(openSpy).toHaveBeenCalledWith('https://github.com/facebook/react', ...NEW_TAB_ARGS)
+    // Story 3.7: click accept collapses the popup, identical to Enter.
+    expect(options()).toHaveLength(0)
+    expect(input()).toHaveAttribute('aria-expanded', 'false')
   })
 })
 

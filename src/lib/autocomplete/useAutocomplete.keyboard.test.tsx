@@ -172,6 +172,84 @@ describe('useAutocomplete — keyboard navigation and ARIA (via test harness)', 
     })
   })
 
+  describe('accept closes the popup and clears the highlight (Story 3.7, AC 1–4)', () => {
+    it('Enter on a highlighted option closes the popup, clears the highlight, keeps query/items/status, and calls onSelect once', async () => {
+      const { onSelect } = await renderOpen()
+      const input = screen.getByRole('combobox')
+
+      pressKey('ArrowDown')
+      pressKey('ArrowDown')
+      pressKey('Enter')
+
+      // Popup collapsed: listbox gone, aria reflects it (AC 1, AC 3).
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+      expect(input).toHaveAttribute('aria-expanded', 'false')
+      expect(input).not.toHaveAttribute('aria-activedescendant')
+      // Query preserved (AC 2); onSelect fired exactly once with the item (AC 1).
+      expect(input).toHaveValue('abc')
+      expect(onSelect).toHaveBeenCalledTimes(1)
+      expect(onSelect).toHaveBeenCalledWith(ITEMS[1])
+    })
+
+    it('click on an option closes the popup and clears the highlight, identical to Enter (AC 4)', async () => {
+      const { onSelect } = await renderOpen()
+      const input = screen.getByRole('combobox')
+
+      // Highlight one item first to prove the highlight is cleared on accept.
+      pressKey('ArrowDown')
+      fireEvent.click(screen.getAllByRole('option')[2])
+
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+      expect(input).toHaveAttribute('aria-expanded', 'false')
+      expect(input).not.toHaveAttribute('aria-activedescendant')
+      expect(input).toHaveValue('abc')
+      expect(onSelect).toHaveBeenCalledTimes(1)
+      expect(onSelect).toHaveBeenCalledWith(ITEMS[2])
+    })
+
+    it('cancels a debounced fetch queued before accept — the popup must not reopen behind the selection', async () => {
+      const fetchSuggestions = vi.fn(() => Promise.resolve(ITEMS))
+      const onSelect = vi.fn()
+      render(<Harness fetchSuggestions={fetchSuggestions} onSelect={onSelect} />)
+      await typeQuery('abc')
+      expect(fetchSuggestions).toHaveBeenCalledTimes(1)
+
+      // A new qualifying char keeps the popup open with the PREVIOUS items and
+      // arms a 300ms debounce. The user accepts a still-visible option before
+      // that debounce settles.
+      fireEvent.change(screen.getByRole('combobox'), { target: { value: 'abcd' } })
+      expect(screen.getByRole('listbox')).toBeInTheDocument()
+      fireEvent.click(screen.getAllByRole('option')[0])
+
+      // Accept closed the popup and notified the consumer once.
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+      expect(onSelect).toHaveBeenCalledTimes(1)
+
+      // The queued debounce must NOT fire and reopen the popup behind the accept.
+      await act(() => vi.advanceTimersByTimeAsync(DEBOUNCE_MS))
+      expect(fetchSuggestions).toHaveBeenCalledTimes(1)
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+      expect(screen.getByRole('combobox')).toHaveAttribute('aria-expanded', 'false')
+    })
+
+    it('preserves status and items on accept so reopen-on-focus (1.5) still has results', async () => {
+      await renderOpen()
+      const input = screen.getByRole('combobox')
+
+      pressKey('ArrowDown')
+      pressKey('Enter')
+
+      // Live-region status derives from status+items; on a closed popup it is
+      // empty, but refocusing reopens the SAME results without a refetch (1.5).
+      input.focus()
+      fireEvent.focus(input)
+
+      expect(screen.getByRole('listbox')).toBeInTheDocument()
+      expect(screen.getAllByRole('option')).toHaveLength(ITEMS.length)
+      expect(screen.getByTestId('status')).toHaveTextContent('3 results')
+    })
+  })
+
   describe('click and hover route through the same selection/highlight paths (AC 2)', () => {
     it('clicking an option calls onSelect with that item', async () => {
       const { onSelect } = await renderOpen()

@@ -9,7 +9,7 @@ import {
   SECOND_OPTION_URL,
   SMALL_QUERY,
 } from './fixtures/github'
-import { githubCombobox, options, searchAndAwaitResults } from './helpers/autocomplete'
+import { githubCombobox, listbox, options, searchAndAwaitResults } from './helpers/autocomplete'
 import { mockGithub } from './helpers/mockGithub'
 
 // Browser-real search → sort → new-tab opening, plus the Story 1.6 user
@@ -53,6 +53,11 @@ test('ArrowDown×2 + Enter opens a new tab with the highlighted URL; demo keeps 
   // Host page is not navigated and keeps its query.
   expect(page.url()).toBe(new URL('/', page.url()).toString())
   await expect(input).toHaveValue('react')
+
+  // Accept collapses the combobox (Story 3.7): the popup is not left expanded
+  // behind the new tab.
+  await expect(input).toHaveAttribute('aria-expanded', 'false')
+  await expect(listbox(page)).toHaveCount(0)
 })
 
 test('mouse click opens the same URL identically (AC 3)', async ({ page, context }) => {
@@ -65,6 +70,10 @@ test('mouse click opens the same URL identically (AC 3)', async ({ page, context
   ])
   await popup.waitForLoadState('domcontentloaded')
   expect(popup.url()).toBe(FIRST_OPTION_URL)
+
+  // Click accept collapses the combobox too (Story 3.7).
+  await expect(githubCombobox(page)).toHaveAttribute('aria-expanded', 'false')
+  await expect(listbox(page)).toHaveCount(0)
 })
 
 test('user rows reveal match context; organizations are labeled org (AC 11)', async ({ page }) => {

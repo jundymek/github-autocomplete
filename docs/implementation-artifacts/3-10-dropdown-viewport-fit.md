@@ -4,7 +4,7 @@ baseline_commit: 592e6f4549ff705f065ba4bdc588da661d9e0027
 
 # Story 3.10: Popup fits the viewport — clamp the dropdown height to available space, flip above when below is too tight
 
-Status: ready-for-dev
+Status: Done
 
 ## Story
 
@@ -102,24 +102,24 @@ Story 1.3) — reverting it would be a regression, not a fix.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Geometry: clamp + flip in `usePopupStyle` (AC: 1, 3, 4) — test-first
-  - [ ] Add the AC 6 position tests (red).
-  - [ ] In `measure()`: compute `spaceBelow`/`spaceAbove` from `rect` and `window.innerHeight`;
+- [x] Task 1 — Geometry: clamp + flip in `usePopupStyle` (AC: 1, 3, 4) — test-first
+  - [x] Add the AC 6 position tests (red).
+  - [x] In `measure()`: compute `spaceBelow`/`spaceAbove` from `rect` and `window.innerHeight`;
         decide side (below unless the AC 3 flip condition holds); emit `top` **or** `bottom` plus
         `maxHeight` in the same inline-style object (single `setStyle`, memo guard untouched) (green).
-- [ ] Task 2 — CSS: flex-column popup, shrinkable list (AC: 2)
-  - [ ] `.pop` → flex column + `box-sizing: border-box`; `.list` → `min-height: 0` (keeps token
+- [x] Task 2 — CSS: flex-column popup, shrinkable list (AC: 2)
+  - [x] `.pop` → flex column + `box-sizing: border-box`; `.list` → `min-height: 0` (keeps token
         max-height and `overflow-y: auto`). Verify messages and footer never clip.
-- [ ] Task 3 — E2E (AC: 5, 7)
-  - [ ] New `e2e/viewport-fit.spec.ts` (short viewport; popup inside viewport; last option
+- [x] Task 3 — E2E (AC: 5, 7)
+  - [x] New `e2e/viewport-fit.spec.ts` (short viewport; popup inside viewport; last option
         reachable; axe clean).
-- [ ] Task 4 — Verify (AC: 4, 8)
-  - [ ] Full suite: `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e`.
-  - [ ] `pnpm dev` spot-check on BOTH instances: short window → list shrinks + scrolls, footer
+- [x] Task 4 — Verify (AC: 4, 8)
+  - [x] Full suite: `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e`.
+  - [x] `pnpm dev` spot-check on BOTH instances: short window → list shrinks + scrolls, footer
         visible; scroll input near the page bottom → popup flips above; resize back → un-flips.
-- [ ] Task 5 — Docs (deliverables below)
-  - [ ] `docs/features/epic-3-demo-e2e-launch/3-10-dropdown-viewport-fit/README.md`.
-  - [ ] `.../MANUAL_TESTING.md` (short-window clamp; flip above; resize re-measure; both instances).
+- [x] Task 5 — Docs (deliverables below)
+  - [x] `docs/features/epic-3-demo-e2e-launch/3-10-dropdown-viewport-fit/README.md`.
+  - [x] `.../MANUAL_TESTING.md` (short-window clamp; flip above; resize re-measure; both instances).
 
 ## Non-goals (deliberate)
 
@@ -217,20 +217,72 @@ the outcome in the PR, re-run the full verification after any fix, then PR.
 
 ### Agent Model Used
 
-_(pending implementation)_
+Claude Fable 5 (claude-fable-5) via Claude Code
 
 ### Implementation Plan
 
-_(pending implementation)_
+1. Test-first: new `src/lib/autocomplete/Autocomplete.position.test.tsx` mocking the anchor's
+   `getBoundingClientRect` and `window.innerHeight` — four cases: (a) roomy below → `top`-anchored
+   with `maxHeight` = space below − margin; (b) tight below, roomy above → flipped (`bottom`
+   anchored, `top: auto`, `maxHeight` = space above − margin); (c) tight on both sides → stays
+   below, clamped; (d) `resize` re-measures and un-flips.
+2. `usePopupStyle.measure()`: compute `spaceBelow`/`spaceAbove` from the rect,
+   `window.innerHeight`, `GAP_BELOW_INPUT_PX` and new `VIEWPORT_MARGIN_PX` (8); flip when
+   `spaceBelow < MIN_POPUP_MAX_HEIGHT_PX` (160) and `spaceAbove > spaceBelow`; emit `top` or
+   `bottom` (the inactive one explicitly `'auto'`) + `maxHeight` in the same style object so the
+   `setStyle` memo guard keeps working.
+3. CSS: `.pop` → flex column (+ explicit `box-sizing: border-box`); `.list` → `min-height: 0`
+   (keeps `--ac-dropdown-max-height` cap and `overflow-y: auto`) so the list absorbs all shrinkage
+   and messages/footer stay visible.
+4. New thin `e2e/viewport-fit.spec.ts`: 1280×400 viewport, big fixture — popup bounding box fully
+   inside the viewport, last option scrollable + clickable, axe clean on the open state.
+5. Full verification, manual browser check on both demo instances, docs folder, review gate, PR.
 
 ### Debug Log References
 
+None — implementation went test-first with no debugging detours.
+
 ### Completion Notes List
 
+- Clamp + flip implemented exactly per AC 1/3 inside `usePopupStyle.measure()`; both `top` and
+  `bottom` are always emitted (the inactive side `'auto'`) so the `setStyle` memo guard compares
+  identical key sets across flip states. `maxHeight` is clamped to ≥ 0.
+- CSS went one step further than AC 2 after review: `min-height: 0; overflow-y: auto` is applied
+  to **every** non-footer popup child (`.pop > :not(.foot)`), not only `.list`. The independent
+  second-pass review (Codex) correctly found that shrinking only the list would let list-less
+  bodies (a tall error block with retry, skeletons, hint) overflow the clamped popup; the footer
+  gets `flex-shrink: 0`. Verified in a real 260px-tall window: the error state flips above and the
+  retry button stays reachable.
+- Tests: 7 RTL geometry tests (`Autocomplete.position.test.tsx`) — the four AC 6 cases plus an
+  equal-space no-flip case, a scroll-event re-measure case (second review finding), and a
+  never-negative `maxHeight` case. New thin `e2e/viewport-fit.spec.ts` (3 tests): popup + footer
+  fully inside a 1280×400 viewport, last of 50 options reachable/clickable (stubbed new tab), axe
+  clean. All existing tests pass without behavioral edits.
+- Review gate: security review — no findings (pure client-side geometry over trusted browser
+  APIs feeding React's `style` prop). Codex second pass — 2 findings, both triaged valid and
+  fixed (CSS selector broadened; scroll re-measure test added); full verification re-run green.
+- Manual testing executed per MANUAL_TESTING.md in real Chromium against `pnpm dev` (real GitHub
+  API): short-window clamp with internal scroll + visible footer (GitHub instance), flip above
+  near the page bottom (countries instance), un-flip after resize — all confirmed with
+  screenshots and bounding-box measurements.
+- Final verification: `pnpm lint && pnpm typecheck && pnpm test` (249 passed) and
+  `pnpm test:e2e` (18 passed) — all green.
+
 ### File List
+
+- `src/lib/autocomplete/Autocomplete.tsx` — UPDATE — clamp + flip in `usePopupStyle.measure()`;
+  `VIEWPORT_MARGIN_PX` / `MIN_POPUP_MAX_HEIGHT_PX` constants.
+- `src/lib/autocomplete/Autocomplete.module.css` — UPDATE — `.pop` flex column;
+  `.pop > :not(.foot)` shrink/scroll rule; `.list` `min-height: 0`; `.foot` `flex-shrink: 0`.
+- `src/lib/autocomplete/Autocomplete.position.test.tsx` — NEW — 7 popup-geometry tests.
+- `e2e/viewport-fit.spec.ts` — NEW — short-viewport fit + last-option reachability + axe.
+- `docs/features/epic-3-demo-e2e-launch/3-10-dropdown-viewport-fit/README.md` — NEW.
+- `docs/features/epic-3-demo-e2e-launch/3-10-dropdown-viewport-fit/MANUAL_TESTING.md` — NEW.
+- `docs/implementation-artifacts/3-10-dropdown-viewport-fit.md` — UPDATE — Dev Agent Record.
 
 ## Change Log
 
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
 | 2026-07-12 | 0.1 | Follow-up story drafted from the owner's bug report over commit 592e6f4: the fixed-position popup is placed below the input with a static 368px list cap and no viewport awareness, so in a short window it is clipped by the viewport edge and — being `position: fixed` — can never be scrolled into view. Fix: viewport-clamp the popup height on every measure pass (flex-column popup, shrinkable list) and flip above the input when space below is under a 160px floor and above is larger. Hand-rolled in `usePopupStyle` — no positioning dependency. | Łukasz (via Claude Code) |
+| 2026-07-12 | 1.0 | Implemented: clamp + flip in `usePopupStyle.measure()`; flex-column popup with every non-footer child shrinkable/scrollable (broadened from list-only after second-pass review); 7 RTL geometry tests + thin viewport-fit e2e; review gate passed; full verification green. | Claude Code (dev agent) |

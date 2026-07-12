@@ -118,6 +118,12 @@
 /* Popup chrome. Position (fixed top/left/width) is set inline by the portal
    positioning effect; everything visual lives here. */
 .pop {
+  /* Flex column so the viewport-clamped maxHeight (set inline by the
+     positioning effect, Story 3.10) shrinks the .list only — state messages
+     and the footer never clip. */
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
   background: var(--ac-color-surface, #ffffff);
   border: 1px solid var(--ac-color-border, #d1d9e0);
   border-radius: var(--ac-radius, 10px);
@@ -126,6 +132,15 @@
   z-index: var(--ac-z-index, 1000);
   font-family: var(--ac-font-ui, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
   animation: ac-in 120ms ease-out;
+}
+
+/* Every popup body — the list, state blocks (empty/error/hint) and the
+   skeleton wrapper — may shrink and scroll inside the viewport-clamped popup;
+   flex items default to min-height:auto and would otherwise overflow it. The
+   footer alone keeps its full height. */
+.pop > :not(.foot) {
+  min-height: 0;
+  overflow-y: auto;
 }
 
 @keyframes ac-in {
@@ -150,7 +165,11 @@
   list-style: none;
   margin: 0;
   padding: 0;
+  /* The token stays the upper cap; the inline viewport clamp on .pop can only
+     make the popup smaller. min-height: 0 lets the flex item shrink below its
+     content size so it scrolls instead of overflowing the clamped popup. */
   max-height: var(--ac-dropdown-max-height, 368px);
+  min-height: 0;
   overflow-y: auto;
 }
 
@@ -231,8 +250,10 @@
   padding-top: 3px;
 }
 
-/* Footer — the contract narration line (design "signature element"). */
+/* Footer — the contract narration line (design "signature element").
+   flex-shrink: 0 keeps it whole inside the viewport-clamped flex popup. */
 .foot {
+  flex-shrink: 0;
   border-top: 1px solid var(--ac-color-border, #d1d9e0);
   margin: 6px -6px -6px;
   padding: var(--ac-space, 8px) 14px;

@@ -35,6 +35,26 @@ test('closed state has no critical/serious violations (AC 5)', async ({ page }) 
   expect(await scanBlocking(page)).toEqual([])
 })
 
+test('below-threshold hint state has no critical/serious violations (3.8)', async ({ page }) => {
+  await mockGithub(page, 'small')
+  await page.goto('/')
+  const input = githubCombobox(page)
+  await input.click()
+  // 1 char is below the default minChars of 3 → the gating hint shows and the
+  // input gains aria-describedby pointing at it. Scan that live state.
+  await input.fill('r')
+  await expect(input).toHaveAttribute('aria-describedby', /.+/)
+  // The described hint node is visible and carries the gating text. React's
+  // useId ids contain characters (»/«/:) that are invalid in a raw CSS `#id`
+  // selector, so match on the quoted `[id="…"]` attribute instead of `#${id}`.
+  const hintId = await input.getAttribute('aria-describedby')
+  const hint = page.locator(`[id="${hintId}"]`)
+  await expect(hint).toBeVisible()
+  await expect(hint).toContainText(/more character/i)
+
+  expect(await scanBlocking(page)).toEqual([])
+})
+
 test('open-with-results state has no critical/serious violations (AC 5)', async ({ page }) => {
   await mockGithub(page, 'small')
   await page.goto('/')

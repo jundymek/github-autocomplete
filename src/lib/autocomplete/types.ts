@@ -242,10 +242,19 @@ export type AutocompleteErrorContent = {
  */
 export type AutocompleteMessages = {
   /**
-   * Hint shown while the query is below `minChars`.
+   * Hint shown while the query is below `minChars`. This is the *visual* form
+   * and may be rich `ReactNode` (the default bolds the remaining count).
    * @default remaining => `Type {remaining} more character(s) to search`
    */
   belowThreshold?: (remainingChars: number) => ReactNode
+  /**
+   * Plain-text form of {@link belowThreshold} announced by the visually-hidden
+   * `aria-live="polite"` region while below `minChars` (a screen reader can't
+   * read rich `ReactNode`, so the announcement needs a flat string). Override
+   * both to localize the sighted hint and its announcement together.
+   * @default remaining => `Type {remaining} more character(s) to search`
+   */
+  belowThresholdAnnouncement?: (remainingChars: number) => string
   /**
    * Title of the empty state. @default query => `No matches for "{query}"`
    */

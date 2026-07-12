@@ -4,7 +4,7 @@ baseline_commit: ab570b1ea718cb2102e181f096ffd9ac51f67e64
 
 # Story 3.9: ArrowDown/ArrowUp reopen a closed popup with retained results — keyboard parity for reopen
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -89,27 +89,27 @@ closed-popup early return, `openIfResults`); docs/implementation-artifacts/1-2-k
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Hook: keyboard reopen (AC: 1, 2, 3, 4, 5) — test-first
-  - [ ] Add the hook tests from AC 7 (red) to `useAutocomplete.keyboard.test.tsx`.
-  - [ ] In `onKeyDown`, before the `if (!isOpen) return` early return, handle ArrowDown/ArrowUp:
+- [x] Task 1 — Hook: keyboard reopen (AC: 1, 2, 3, 4, 5) — test-first
+  - [x] Add the hook tests from AC 7 (red) to `useAutocomplete.keyboard.test.tsx`.
+  - [x] In `onKeyDown`, before the `if (!isOpen) return` early return, handle ArrowDown/ArrowUp:
         when the shared reopen guard passes (same predicate as `openIfResults`), `preventDefault()`
         and open in a **single** state update that also sets the APG highlight (first for
         ArrowDown, last for ArrowUp, `null` when there are no items). When the guard fails, fall
         through untouched (no consume). Share the guard — one reopen definition (green).
-- [ ] Task 2 — Component behavior (AC: 6, 7) — test-first
-  - [ ] Add the RTL tests (red): Escape → ArrowDown re-shows options without a refetch;
+- [x] Task 2 — Component behavior (AC: 6, 7) — test-first
+  - [x] Add the RTL tests (red): Escape → ArrowDown re-shows options without a refetch;
         Esc → ArrowDown → Enter selects. Confirm no component source change is needed — the hook
         owns this; a required `Autocomplete.tsx` edit is a boundary smell (green).
-- [ ] Task 3 — E2E (AC: 8)
-  - [ ] Extend `e2e/reopen.spec.ts` with the Escape → ArrowDown keyboard reopen assertion; re-run axe.
-- [ ] Task 4 — Verify (AC: 6, 9)
-  - [ ] Full suite: `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e`.
-  - [ ] `pnpm dev` spot-check on BOTH instances: type a qualifying query → Escape → ArrowDown
+- [x] Task 3 — E2E (AC: 8)
+  - [x] Extend `e2e/reopen.spec.ts` with the Escape → ArrowDown keyboard reopen assertion; re-run axe.
+- [x] Task 4 — Verify (AC: 6, 9)
+  - [x] Full suite: `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e`.
+  - [x] `pnpm dev` spot-check on BOTH instances: type a qualifying query → Escape → ArrowDown
         reopens with the first option highlighted and zero new requests (Network panel); ArrowUp
         variant; idle/below-threshold ArrowDown moves the caret only.
-- [ ] Task 5 — Docs (deliverables below)
-  - [ ] `docs/features/epic-3-demo-e2e-launch/3-9-arrowdown-reopens-closed-popup/README.md`.
-  - [ ] `.../MANUAL_TESTING.md` (Esc → ArrowDown/ArrowUp reopen; highlight position; no-op cases;
+- [x] Task 5 — Docs (deliverables below)
+  - [x] `docs/features/epic-3-demo-e2e-launch/3-9-arrowdown-reopens-closed-popup/README.md`.
+  - [x] `.../MANUAL_TESTING.md` (Esc → ArrowDown/ArrowUp reopen; highlight position; no-op cases;
         both instances).
 
 ## Non-goals (deliberate)
@@ -216,18 +216,72 @@ re-run the full verification after any fix, then PR.
 
 ### Agent Model Used
 
+claude-fable-5 (Claude Code)
+
 ### Implementation Plan
+
+1. Extract the 1.5 reopen guard into a shared pure predicate `canReopen(state, minChars)`
+   (spec Dev Notes option (a)); `openIfResults` delegates to it unchanged (focus path keeps
+   `highlightedIndex` untouched).
+2. Test-first: add the AC 7 hook tests (red) to `useAutocomplete.keyboard.test.tsx`, then insert a
+   closed-popup ArrowDown/ArrowUp branch in `onKeyDown` before the `if (!isOpen) return` early
+   return: when `canReopen` passes, `preventDefault()` and one `setState` that opens and sets the
+   APG highlight (first for ArrowDown, last for ArrowUp, `null` with zero items); when it fails,
+   fall through unconsumed.
+3. Test-first RTL: Escape → ArrowDown re-shows the same options with unchanged fetch count;
+   Esc → ArrowDown → Enter selects. No `Autocomplete.tsx` change expected.
+4. Extend `e2e/reopen.spec.ts` with the keyboard reopen path (zero new requests); re-run axe suite.
+5. Docs folder + full verification + mandatory pre-PR review gate.
 
 ### Debug Log References
 
+None — clean red→green cycle at every step; no debugging sessions required.
+
 ### Completion Notes List
+
+- Extracted the Story 1.5 reopen condition into a module-level `canReopen(state, minChars)`
+  predicate (spec Dev Notes option (a)); `openIfResults` and the new `onKeyDown` closed-popup
+  branch both decide through it — one guard definition, zero duplication (AC 1).
+- ArrowDown reopens with `highlightedIndex: 0`, ArrowUp with the last index, empty/error settled
+  states with `null`; open + highlight commit in a single `setState` so ARIA cannot lag a frame
+  (AC 2, AC 5). `minChars` added to the `onKeyDown` deps array (the guard reads it).
+- Keys are consumed only when actually reopening; idle/loading/below-threshold arrows, and
+  Enter/Escape/Home/End on a closed popup, keep native behavior — asserted by tests (AC 3, AC 4).
+- All 242 unit/integration tests and 15 e2e tests pass with zero behavioral edits to existing
+  tests (AC 6, AC 9); axe suite clean (AC 8).
+- MANUAL_TESTING.md executed end-to-end in a real Chromium browser against `pnpm dev` (real
+  GitHub API): all 8 steps pass on both instances, zero extra network requests across every
+  reopen, Esc→ArrowDown→Enter opened the highlighted result in a new tab.
+- `types.ts`, `Autocomplete.tsx`, `src/features/`, `src/demo/` untouched, as the spec predicted.
 
 ### Pre-PR Review Gate
 
+- **Security review** (2026-07-12, over the full story diff): no findings. The production change
+  is a pure client-side state transition — no network calls, URL handling, DOM injection, storage,
+  or secrets; the reopen path only re-shows in-memory results already shown to the user.
+- **Independent second-pass review** (codex-rescue, 2026-07-12, story diff + spec as context):
+  no findings; verdict "ready to merge". Checked correctness, React pitfalls (stale closures,
+  deps, StrictMode), APG conformance, edge cases (minChars=0, N=1, items changing between close
+  and reopen), and the architecture boundary.
+- **Triage:** zero findings from both passes — nothing to verify or fix; no false positives to
+  document. Full verification (`pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e`) green
+  before and unchanged after the gate.
+
 ### File List
+
+- `src/lib/autocomplete/useAutocomplete.ts` — UPDATE — shared `canReopen` guard; closed-popup
+  ArrowDown/ArrowUp reopen branch in `onKeyDown`; `openIfResults` delegates to the guard.
+- `src/lib/autocomplete/useAutocomplete.keyboard.test.tsx` — UPDATE — 9 keyboard-reopen hook tests.
+- `src/lib/autocomplete/Autocomplete.reopen.test.tsx` — UPDATE — 2 RTL tests (reopen without
+  refetch; Esc → ArrowDown → Enter loop).
+- `e2e/reopen.spec.ts` — UPDATE — keyboard reopen extension of the request-counting flow.
+- `docs/features/epic-3-demo-e2e-launch/3-9-arrowdown-reopens-closed-popup/README.md` — NEW.
+- `docs/features/epic-3-demo-e2e-launch/3-9-arrowdown-reopens-closed-popup/MANUAL_TESTING.md` — NEW.
+- `docs/implementation-artifacts/3-9-arrowdown-reopens-closed-popup.md` — UPDATE — Dev Agent Record.
 
 ## Change Log
 
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
+| 2026-07-12 | 1.0 | Implemented: shared `canReopen` guard + closed-popup ArrowDown/ArrowUp branch in `onKeyDown` (single setState, APG first/last highlight, no refetch). 9 hook tests, 2 RTL tests, e2e keyboard-reopen extension. Full suite + manual browser run green; security review and codex second-pass review clean. | Dev agent (Claude Code) |
 | 2026-07-12 | 0.1 | Follow-up story drafted from an external bug report over commit ab570b1: after Escape the popup cannot be reopened from the keyboard (focus never left the input, so the 1.5 focus-reopen path cannot fire, and `onKeyDown` ignores all keys while closed). Fix: ArrowDown/ArrowUp on a closed popup with settled results reopen it via the shared 1.5 guard, with APG-conformant first/last highlight, no refetch. Enter stays native per APG. | Łukasz (via BMAD create-story) |

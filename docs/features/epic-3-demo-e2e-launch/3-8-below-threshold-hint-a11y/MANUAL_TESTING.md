@@ -52,8 +52,10 @@ pluralization); the input is `aria-describedby` the visible hint node whose id m
 the association drops at threshold — on both the GitHub (features layer) and country (pure lib layer)
 instances.
 
-**Still human-only:** whether VoiceOver *audibly* speaks this — polite, non-interrupting, read as the
-input's description. The DOM wiring it relies on is verified above; the spoken output needs a person.
+**Audible VoiceOver check — verified by Łukasz (2026-07-12):** with VoiceOver on, typing below
+threshold is spoken (politely), the count updates 2→1 as more characters are typed, and returning
+focus to the input reads the hint as the input's description (`aria-describedby`). This is the
+human-only half; it now matches the agent-verified DOM state above.
 
 ## Accessibility checks
 

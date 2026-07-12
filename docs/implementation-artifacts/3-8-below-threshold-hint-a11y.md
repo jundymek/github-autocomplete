@@ -124,9 +124,10 @@ docs/planning-artifacts/architecture.md#3.5/#AR-4; CLAUDE.md#Architecture bounda
         count (2→1, singular at 1), the input's `aria-describedby` points at the visible hint node
         (ids match), and the attribute drops at threshold. Verified in the running app (see
         MANUAL_TESTING "Agent-driven DOM verification").
-  - [ ] Audible VoiceOver spot check (HUMAN-ONLY, not agent-verifiable): confirm VoiceOver actually
-        speaks the hint politely and reads it as the input's description; both instances. The
-        machine-observable DOM state above is fully verified; only the spoken output awaits a human.
+  - [x] Audible VoiceOver spot check (HUMAN-ONLY, verified by Łukasz 2026-07-12): VoiceOver speaks
+        the hint politely and, on returning focus to the input, reads it as the input's description;
+        the count updates 2→1 as more chars are typed. The machine-observable DOM state was
+        agent-verified; the spoken output was confirmed by a human.
 - [x] Task 5 — Docs (deliverables below)
   - [x] `docs/features/epic-3-demo-e2e-launch/3-8-below-threshold-hint-a11y/README.md`.
   - [x] `docs/features/epic-3-demo-e2e-launch/3-8-below-threshold-hint-a11y/MANUAL_TESTING.md`
@@ -283,6 +284,10 @@ claude-opus-4-8[1m] (Claude Opus 4.8, 1M context)
   VoiceOver** check, left unchecked as HUMAN-ONLY (an agent can't verify spoken output). React 19.2's
   `useId` here renders `_r_N_` (a CSS-valid id); the e2e `[id="…"]` selector remains the robust choice
   regardless of id shape.
+- **Audible VoiceOver check now done (by Łukasz, 2026-07-12).** With VoiceOver enabled he confirmed
+  the hint is spoken politely, the remaining count updates 2→1 as characters are typed, and the hint
+  is read as the input's description on focus. The one human-only step is verified; the story is fully
+  tested (agent-verified DOM + human-verified speech).
 
 ### Pre-PR Review Gate
 

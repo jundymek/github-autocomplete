@@ -37,6 +37,22 @@ function createInitialState<T>(): InternalState<T> {
   }
 }
 
+/**
+ * The single reopen guard (Stories 1.5 + 3.9): a closed popup may reopen —
+ * without any refetch — only while the query still qualifies and the result
+ * state is settled (`success`, `empty`, or `error`; the message states reopen
+ * too, so the user can re-read why there is nothing to pick). Both the
+ * focus-reopen path and the keyboard-reopen path decide through this one
+ * predicate; `idle`, `loading`, below-threshold, and already-open fail it.
+ */
+function canReopen<T>(state: InternalState<T>, minChars: number): boolean {
+  return (
+    !state.isOpen &&
+    state.query.length >= minChars &&
+    (state.status === 'success' || state.status === 'empty' || state.status === 'error')
+  )
+}
+
 function isAbortRejection(error: unknown): boolean {
   return (
     typeof error === 'object' &&
@@ -211,18 +227,9 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>): UseAutoc
 
   const openIfResults = useCallback(() => {
     // Reopen-on-focus (1.5): show already-fetched results again without a new
-    // request. Only when a settled results state exists for the current
-    // qualifying query and the dropdown is closed. Never fetches, never
-    // touches the debounce/highlight. Idle, below-threshold, loading, and
-    // already-open all fall through as no-ops.
-    setState((prev) => {
-      if (prev.isOpen) return prev
-      if (prev.query.length < minChars) return prev
-      if (prev.status !== 'success' && prev.status !== 'empty' && prev.status !== 'error') {
-        return prev
-      }
-      return { ...prev, isOpen: true }
-    })
+    // request, gated by the shared `canReopen` guard. Never fetches, never
+    // touches the debounce/highlight; failing states fall through as no-ops.
+    setState((prev) => (canReopen(prev, minChars) ? { ...prev, isOpen: true } : prev))
   }, [minChars])
 
   // --- Ids (AC 7): stable per-instance base; option ids derive from getItemKey.
@@ -266,8 +273,24 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>): UseAutoc
   const onKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLInputElement>) => {
       const { isOpen, items, highlightedIndex } = state
-      // A closed dropdown consumes nothing — keys keep their native behavior.
-      if (!isOpen) return
+      if (!isOpen) {
+        // Keyboard reopen (3.9, APG): ArrowDown/ArrowUp on a closed popup with
+        // settled results reopen it — no refetch, no debounce — highlighting
+        // the first (Down) or last (Up) option, or nothing when the settled
+        // state has no items (empty/error message popup). One setState so the
+        // open and the highlight commit in the same paint. Every other key —
+        // and the arrows whenever `canReopen` fails (idle, loading,
+        // below-threshold) — stays unconsumed with its native behavior.
+        if (
+          (event.key === 'ArrowDown' || event.key === 'ArrowUp') &&
+          canReopen(state, minChars)
+        ) {
+          event.preventDefault()
+          const highlight = items.length === 0 ? null : event.key === 'ArrowDown' ? 0 : items.length - 1
+          setState((prev) => ({ ...prev, isOpen: true, highlightedIndex: highlight }))
+        }
+        return
+      }
 
       switch (event.key) {
         case 'ArrowDown':
@@ -308,7 +331,7 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>): UseAutoc
           return
       }
     },
-    [state, close, selectItem, setHighlight],
+    [state, minChars, close, selectItem, setHighlight],
   )
 
   const onItemClick = useCallback(

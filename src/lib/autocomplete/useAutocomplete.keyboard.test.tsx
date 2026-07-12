@@ -410,6 +410,130 @@ describe('useAutocomplete — keyboard navigation and ARIA (via test harness)', 
     })
   })
 
+  describe('ArrowDown/ArrowUp reopen a closed popup with settled results (Story 3.9)', () => {
+    it('ArrowDown after Escape reopens with index 0 highlighted, no second fetch, and consumes the key', async () => {
+      const fetchSuggestions = vi.fn(() => Promise.resolve(ITEMS))
+      render(<Harness fetchSuggestions={fetchSuggestions} onSelect={vi.fn()} />)
+      await typeQuery()
+      expect(fetchSuggestions).toHaveBeenCalledTimes(1)
+
+      pressKey('Escape')
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+
+      const defaultNotPrevented = pressKey('ArrowDown')
+
+      expect(defaultNotPrevented).toBe(false)
+      const options = screen.getAllByRole('option')
+      expect(options).toHaveLength(ITEMS.length)
+      expect(options[0]).toHaveAttribute('aria-selected', 'true')
+      // No refetch, no new debounce: the fetch count stays at 1 (AC 1).
+      await act(() => vi.advanceTimersByTimeAsync(DEBOUNCE_MS))
+      expect(fetchSuggestions).toHaveBeenCalledTimes(1)
+    })
+
+    it('ArrowUp after Escape reopens with the LAST option highlighted (APG)', async () => {
+      await renderOpen()
+
+      pressKey('Escape')
+      const defaultNotPrevented = pressKey('ArrowUp')
+
+      expect(defaultNotPrevented).toBe(false)
+      const options = screen.getAllByRole('option')
+      expect(options[options.length - 1]).toHaveAttribute('aria-selected', 'true')
+      expect(options[0]).toHaveAttribute('aria-selected', 'false')
+    })
+
+    it('reopens an empty settled state with no highlight (message popup, nothing to select)', async () => {
+      const onSelect = vi.fn()
+      await renderOpen([], onSelect)
+      expect(screen.getByTestId('status')).toHaveTextContent('No matches')
+
+      pressKey('Escape')
+      expect(screen.getByRole('combobox')).toHaveAttribute('aria-expanded', 'false')
+
+      expect(pressKey('ArrowDown')).toBe(false)
+
+      expect(screen.getByRole('combobox')).toHaveAttribute('aria-expanded', 'true')
+      expect(screen.getByRole('combobox')).not.toHaveAttribute('aria-activedescendant')
+      expect(screen.getByTestId('status')).toHaveTextContent('No matches')
+
+      // Enter over the reopened empty popup selects nothing.
+      pressKey('Enter')
+      expect(onSelect).not.toHaveBeenCalled()
+    })
+
+    it('reopens an error settled state with no highlight', async () => {
+      render(<Harness fetchSuggestions={() => Promise.reject(new Error('boom'))} onSelect={vi.fn()} />)
+      await typeQuery()
+      expect(screen.getByTestId('status')).toHaveTextContent('Something went wrong.')
+
+      pressKey('Escape')
+      expect(pressKey('ArrowUp')).toBe(false)
+
+      expect(screen.getByRole('combobox')).toHaveAttribute('aria-expanded', 'true')
+      expect(screen.getByRole('combobox')).not.toHaveAttribute('aria-activedescendant')
+      expect(screen.getByTestId('status')).toHaveTextContent('Something went wrong.')
+    })
+
+    it('leaves the arrows unconsumed while closed and idle (native caret move, no fetch)', () => {
+      const fetchSuggestions = vi.fn(() => Promise.resolve(ITEMS))
+      render(<Harness fetchSuggestions={fetchSuggestions} onSelect={vi.fn()} />)
+
+      expect(pressKey('ArrowDown')).toBe(true)
+      expect(pressKey('ArrowUp')).toBe(true)
+      expect(screen.getByRole('combobox')).toHaveAttribute('aria-expanded', 'false')
+      expect(fetchSuggestions).not.toHaveBeenCalled()
+    })
+
+    it('leaves the arrows unconsumed while closed and loading (fetch pending)', async () => {
+      const deferred = createDeferred<Item[]>()
+      render(<Harness fetchSuggestions={() => deferred.promise} onSelect={vi.fn()} />)
+      await typeQuery()
+      // Loading opened the popup; Escape closes it while the fetch is pending —
+      // and cancels it (1.4 teardown), leaving a closed, unsettled popup.
+      pressKey('Escape')
+      expect(screen.getByRole('combobox')).toHaveAttribute('aria-expanded', 'false')
+
+      expect(pressKey('ArrowDown')).toBe(true)
+      expect(screen.getByRole('combobox')).toHaveAttribute('aria-expanded', 'false')
+    })
+
+    it('leaves the arrows unconsumed with a below-threshold query', async () => {
+      await renderOpen()
+      // Drop below minChars: resets to idle/closed.
+      fireEvent.change(screen.getByRole('combobox'), { target: { value: 'ab' } })
+      expect(screen.getByRole('combobox')).toHaveAttribute('aria-expanded', 'false')
+
+      expect(pressKey('ArrowDown')).toBe(true)
+      expect(pressKey('ArrowUp')).toBe(true)
+      expect(screen.getByRole('combobox')).toHaveAttribute('aria-expanded', 'false')
+    })
+
+    it('Enter on a closed popup with settled results stays native (no reopen, no select)', async () => {
+      const { onSelect } = await renderOpen()
+
+      pressKey('Escape')
+      expect(pressKey('Enter')).toBe(true)
+
+      expect(screen.getByRole('combobox')).toHaveAttribute('aria-expanded', 'false')
+      expect(onSelect).not.toHaveBeenCalled()
+    })
+
+    it('reflects the reopen in getInputProps ARIA: aria-expanded and aria-activedescendant (AC 5)', async () => {
+      await renderOpen()
+      const input = screen.getByRole('combobox')
+
+      pressKey('Escape')
+      expect(input).toHaveAttribute('aria-expanded', 'false')
+      expect(input).not.toHaveAttribute('aria-activedescendant')
+
+      pressKey('ArrowDown')
+
+      expect(input).toHaveAttribute('aria-expanded', 'true')
+      expect(input).toHaveAttribute('aria-activedescendant', screen.getAllByRole('option')[0].id)
+    })
+  })
+
   describe('live-region status text (AC 8)', () => {
     it("derives 'Searching…' while loading and 'N results' on success", async () => {
       const deferred = createDeferred<Item[]>()

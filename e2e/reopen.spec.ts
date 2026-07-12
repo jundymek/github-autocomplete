@@ -32,6 +32,18 @@ test('refocus reopens the same results and fires no new GitHub request (AC 10)',
 
   // ...and fired no new request across the close→refocus cycle.
   expect(mock.count()).toBe(afterSearch)
+
+  // Story 3.9: keyboard reopen. Escape keeps focus on the input, so no focus
+  // event can ever reopen — ArrowDown must. Same listbox, zero new requests.
+  await input.press('Escape')
+  await expect(input).toHaveAttribute('aria-expanded', 'false')
+
+  await input.press('ArrowDown')
+  await expect(input).toHaveAttribute('aria-expanded', 'true')
+  await expect(options(page)).toHaveCount(EXPECTED_SORTED_NAMES.length)
+  // APG: ArrowDown reopens with the first option highlighted.
+  await expect(options(page).first()).toHaveAttribute('aria-selected', 'true')
+  expect(mock.count()).toBe(afterSearch)
 })
 
 test('focusing a fresh, never-searched input opens nothing (AC 10)', async ({ page }) => {

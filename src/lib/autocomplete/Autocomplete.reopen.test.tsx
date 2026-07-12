@@ -106,6 +106,42 @@ describe('Autocomplete — reopen-on-focus (Story 1.5)', () => {
     expect(input()).toHaveAttribute('aria-expanded', 'false')
   })
 
+  it('ArrowDown after Escape re-shows the same options without a refetch (Story 3.9)', async () => {
+    const { fetchSuggestions } = renderAutocomplete()
+
+    await typeAndSettle('abc')
+    expect(screen.getAllByRole('option')).toHaveLength(3)
+    expect(fetchSuggestions).toHaveBeenCalledTimes(1)
+
+    // Escape keeps focus on the input — no focus event will ever fire, so the
+    // 1.5 focus-reopen path cannot help; ArrowDown is the keyboard recovery.
+    fireEvent.keyDown(input(), { key: 'Escape' })
+    expect(popup()).toBeNull()
+
+    fireEvent.keyDown(input(), { key: 'ArrowDown' })
+
+    expect(input()).toHaveAttribute('aria-expanded', 'true')
+    const options = screen.getAllByRole('option')
+    expect(options).toHaveLength(3)
+    expect(options[0]).toHaveAttribute('aria-selected', 'true')
+    await act(() => vi.advanceTimersByTimeAsync(DEBOUNCE_MS))
+    expect(fetchSuggestions).toHaveBeenCalledTimes(1)
+  })
+
+  it('Escape → ArrowDown → Enter selects the highlighted option (Story 3.9 full loop)', async () => {
+    const { onSelect, fetchSuggestions } = renderAutocomplete()
+
+    await typeAndSettle('abc')
+    fireEvent.keyDown(input(), { key: 'Escape' })
+    fireEvent.keyDown(input(), { key: 'ArrowDown' })
+    fireEvent.keyDown(input(), { key: 'Enter' })
+
+    expect(onSelect).toHaveBeenCalledTimes(1)
+    expect(onSelect).toHaveBeenCalledWith(FRUITS[0])
+    expect(popup()).toBeNull()
+    expect(fetchSuggestions).toHaveBeenCalledTimes(1)
+  })
+
   it('reopen composes with outside-click dismissal without flicker (close → refocus stays open)', async () => {
     renderAutocomplete()
 

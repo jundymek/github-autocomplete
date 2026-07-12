@@ -126,6 +126,15 @@ export type AutocompleteItemProps = {
 export type AutocompleteHandlers<T> = {
   /** Feeds a new input value into the hook (threshold + debounce applied). */
   onInputChange: (value: string) => void
+  /**
+   * Resets the hook to its initial state in one action: empties the query,
+   * cancels any pending debounce, aborts any in-flight fetch, and returns to
+   * `idle` with no items, no highlight, and the popup closed. The reset is
+   * unconditional (it holds even when `minChars` is 0). A stale response from
+   * the aborted fetch can never commit afterwards. Unlike `close`, this
+   * discards the query.
+   */
+  clear: () => void
   /** Closes the dropdown and resets the highlight; the query is kept. */
   close: () => void
   /**
@@ -291,6 +300,12 @@ export type AutocompleteProps<T> = {
   placeholder?: string
   /** Accessible name of the combobox input (`aria-label`). @default 'Search' */
   label?: string
+  /**
+   * Accessible name (`aria-label`) of the trailing "×" clear button, which
+   * appears whenever the input holds a query and is not loading. Activating it
+   * calls `handlers.clear()` and returns focus to the input. @default 'Clear'
+   */
+  clearLabel?: string
   /** Minimum query length before any request is issued. @default 3 */
   minChars?: number
   /** Debounce window in milliseconds. @default 300 */

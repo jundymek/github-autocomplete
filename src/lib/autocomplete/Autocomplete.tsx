@@ -14,6 +14,7 @@ import { useAutocomplete } from './useAutocomplete'
 const DEFAULT_MIN_CHARS = 3
 const DEFAULT_PLACEHOLDER = 'Search…'
 const DEFAULT_LABEL = 'Search'
+const DEFAULT_CLEAR_LABEL = 'Clear'
 const GAP_BELOW_INPUT_PX = 6
 const SKELETON_ROW_COUNT = 3
 
@@ -175,6 +176,7 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
     onSelect,
     placeholder = DEFAULT_PLACEHOLDER,
     label = DEFAULT_LABEL,
+    clearLabel = DEFAULT_CLEAR_LABEL,
     minChars = DEFAULT_MIN_CHARS,
     debounceMs,
     messages,
@@ -266,6 +268,16 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
     handlers.onInputChange(state.query)
     inputRef.current?.focus()
   }, [handlers, state.query])
+
+  // Clear button (3.6): empty the query via the hook's one reset path, return
+  // focus to the input (the button's job is done — same refocus as retry), and
+  // reset the below-threshold hint dismissal so the next typing session behaves
+  // like a fresh mount (AC 2).
+  const clearInput = useCallback(() => {
+    handlers.clear()
+    setHintDismissedFor(null)
+    inputRef.current?.focus()
+  }, [handlers])
 
   const errorContent: AutocompleteErrorContent | null =
     state.status === 'error' && state.error !== undefined
@@ -361,6 +373,28 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
           <span className={styles.dot} />
           <span className={styles.dot} />
         </div>
+      )}
+      {/* Clear button in the same trailing lane as the loading dots — shown only
+          with a non-empty query and not loading, so the two never overlap and
+          the lane needs no extra width (AC 2). Lives in the root subtree so the
+          outside-press listener treats a press on it as inside (AC 3). */}
+      {state.query.length > 0 && state.status !== 'loading' && (
+        <button
+          type="button"
+          className={styles.clear}
+          aria-label={clearLabel}
+          onClick={clearInput}
+        >
+          {/* Inline SVG glyph — no icon dependency (AR-1). */}
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+            <path
+              d="M4 4l8 8M12 4l-8 8"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
       )}
       {/* Rendered in-flow (not in the portal) so it stays inside the host's
           accessibility tree regardless of where the popup lands. */}

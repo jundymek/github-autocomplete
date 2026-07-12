@@ -84,6 +84,37 @@
   }
 }
 
+/* Clear ("×") button (3.6). Shares the trailing lane with the loading dots
+   (mutually exclusive), so it sits inside the input's existing 40px right inset
+   with no layout shift. Muted glyph by default; accent on hover/focus-visible;
+   focus ring mirrors the input's accent treatment. */
+.clear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  color: var(--ac-color-text-muted, #59636e);
+  background: none;
+  border: none;
+  border-radius: var(--ac-radius-item, 6px);
+  cursor: pointer;
+}
+
+.clear:hover {
+  color: var(--ac-color-accent, #6639ba);
+}
+
+.clear:focus-visible {
+  outline: 2px solid var(--ac-color-accent, #6639ba);
+  outline-offset: 1px;
+  color: var(--ac-color-accent, #6639ba);
+}
+
 /* Popup chrome. Position (fixed top/left/width) is set inline by the portal
    positioning effect; everything visual lives here. */
 .pop {

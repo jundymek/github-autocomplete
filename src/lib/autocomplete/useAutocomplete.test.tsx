@@ -271,6 +271,123 @@ describe('useAutocomplete', () => {
     expect(result.current.state.query).toBe('rea')
   })
 
+  describe('clear() (Story 3.6)', () => {
+    /** The state a fresh mount reports (statusMessage derived, always ''). */
+    const INITIAL_STATE = {
+      query: '',
+      status: 'idle',
+      items: [],
+      highlightedIndex: null,
+      isOpen: false,
+      statusMessage: '',
+    }
+
+    it('clears from success back to the initial state', async () => {
+      const items: Item[] = [{ id: '1', label: 'react' }]
+      const fetchSuggestions = vi.fn(() => Promise.resolve(items))
+      const { result } = renderHook(() => useAutocomplete<Item>({ ...baseOptions, fetchSuggestions }))
+
+      act(() => result.current.handlers.onInputChange('rea'))
+      await act(() => vi.advanceTimersByTimeAsync(DEBOUNCE_MS))
+      expect(result.current.state.status).toBe('success')
+
+      act(() => result.current.handlers.clear())
+
+      expect(result.current.state).toEqual(INITIAL_STATE)
+      expect(result.current.state.error).toBeUndefined()
+    })
+
+    it('clears from loading: aborts the in-flight fetch and a late resolve commits nothing', async () => {
+      const deferred = createDeferred<Item[]>()
+      const fetchSuggestions = vi.fn<FetchSuggestions>(() => deferred.promise)
+      const { result } = renderHook(() => useAutocomplete<Item>({ ...baseOptions, fetchSuggestions }))
+
+      act(() => result.current.handlers.onInputChange('rea'))
+      await act(() => vi.advanceTimersByTimeAsync(DEBOUNCE_MS))
+      expect(result.current.state.status).toBe('loading')
+      const signal = fetchSuggestions.mock.calls[0][1]
+
+      act(() => result.current.handlers.clear())
+
+      expect(signal.aborted).toBe(true)
+      expect(result.current.state).toEqual(INITIAL_STATE)
+
+      // The aborted fetch resolving late must never commit stale state.
+      await act(async () => deferred.resolve([{ id: 'x', label: 'late' }]))
+      expect(result.current.state).toEqual(INITIAL_STATE)
+    })
+
+    it('clears from error back to the initial state', async () => {
+      const deferred = createDeferred<Item[]>()
+      const fetchSuggestions = vi.fn(() => deferred.promise)
+      const { result } = renderHook(() => useAutocomplete<Item>({ ...baseOptions, fetchSuggestions }))
+
+      act(() => result.current.handlers.onInputChange('rea'))
+      await act(() => vi.advanceTimersByTimeAsync(DEBOUNCE_MS))
+      await act(async () => deferred.reject(new Error('boom')))
+      expect(result.current.state.status).toBe('error')
+
+      act(() => result.current.handlers.clear())
+
+      expect(result.current.state).toEqual(INITIAL_STATE)
+      expect(result.current.state.error).toBeUndefined()
+    })
+
+    it('clears from a below-threshold query and cancels its pending debounce', async () => {
+      const fetchSuggestions = vi.fn(() => Promise.resolve<Item[]>([]))
+      const { result } = renderHook(() => useAutocomplete<Item>({ ...baseOptions, fetchSuggestions }))
+
+      // Below threshold: idle, but the query field is populated.
+      act(() => result.current.handlers.onInputChange('re'))
+      expect(result.current.state.query).toBe('re')
+
+      act(() => result.current.handlers.clear())
+      expect(result.current.state).toEqual(INITIAL_STATE)
+
+      // No debounced fetch may fire afterwards from any prior queued keystroke.
+      await act(() => vi.advanceTimersByTimeAsync(DEBOUNCE_MS))
+      expect(fetchSuggestions).not.toHaveBeenCalled()
+    })
+
+    it('resets unconditionally even when minChars is 0 (empty query is at threshold)', async () => {
+      // With minChars=0 an empty string is NOT below threshold, so a naive
+      // onInputChange('') would fetch '' instead of clearing. clear() must still
+      // land in the initial state and fire no follow-up request (AC 1).
+      const items: Item[] = [{ id: '1', label: 'x' }]
+      const fetchSuggestions = vi.fn(() => Promise.resolve(items))
+      const { result } = renderHook(() =>
+        useAutocomplete<Item>({ ...baseOptions, fetchSuggestions, minChars: 0 }),
+      )
+
+      act(() => result.current.handlers.onInputChange('rea'))
+      await act(() => vi.advanceTimersByTimeAsync(DEBOUNCE_MS))
+      expect(result.current.state.status).toBe('success')
+      const callsBeforeClear = fetchSuggestions.mock.calls.length
+
+      act(() => result.current.handlers.clear())
+      expect(result.current.state).toEqual(INITIAL_STATE)
+
+      // No debounced fetch for the empty query may fire afterwards.
+      await act(() => vi.advanceTimersByTimeAsync(DEBOUNCE_MS))
+      expect(result.current.state).toEqual(INITIAL_STATE)
+      expect(fetchSuggestions).toHaveBeenCalledTimes(callsBeforeClear)
+    })
+
+    it('cancels a pending debounce queued for a qualifying query', async () => {
+      const fetchSuggestions = vi.fn(() => Promise.resolve<Item[]>([]))
+      const { result } = renderHook(() => useAutocomplete<Item>({ ...baseOptions, fetchSuggestions }))
+
+      // Qualifying query typed — its debounce window is still open.
+      act(() => result.current.handlers.onInputChange('rea'))
+      act(() => result.current.handlers.clear())
+
+      expect(result.current.state).toEqual(INITIAL_STATE)
+
+      await act(() => vi.advanceTimersByTimeAsync(DEBOUNCE_MS))
+      expect(fetchSuggestions).not.toHaveBeenCalled()
+    })
+  })
+
   describe('reopen-on-focus (Story 1.5)', () => {
     /** Fires the focus handler exposed on the input prop getter. */
     function focus(result: { current: ReturnType<typeof useAutocomplete<Item>> }) {

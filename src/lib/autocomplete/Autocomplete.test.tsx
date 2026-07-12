@@ -77,6 +77,11 @@ function pressKey(key: string) {
   fireEvent.keyDown(input(), { key })
 }
 
+/** The clear ("×") button, or null when the component does not render it. */
+function clearButton(name: string | RegExp = 'Clear'): HTMLButtonElement | null {
+  return screen.queryByRole('button', { name }) as HTMLButtonElement | null
+}
+
 describe('Autocomplete — generic presentational component', () => {
   beforeEach(() => {
     vi.useFakeTimers()
@@ -451,6 +456,111 @@ describe('Autocomplete — generic presentational component', () => {
 
       const pop = popup()!
       expect(pop.style.getPropertyValue('--ac-color-accent')).toBe('#0f766e')
+    })
+  })
+
+  describe('clear button (Story 3.6)', () => {
+    it('is not rendered when the query is empty', () => {
+      renderAutocomplete()
+      act(() => input().focus())
+
+      expect(clearButton()).toBeNull()
+    })
+
+    it('appears once the query has any content (below threshold too)', () => {
+      renderAutocomplete()
+
+      typeQuery('a')
+
+      expect(clearButton()).not.toBeNull()
+    })
+
+    it('is hidden while loading (the pulse dots hold the lane instead)', async () => {
+      const deferred = createDeferred<Fruit[]>()
+      renderAutocomplete({ fetchSuggestions: () => deferred.promise })
+
+      await typeAndSettle()
+
+      // Loading: dots visible, button absent (mutually exclusive, one lane).
+      expect(document.querySelectorAll(`[class~="${styles.dot}"]`)).toHaveLength(3)
+      expect(clearButton()).toBeNull()
+
+      // Once the fetch settles the button returns.
+      await act(async () => deferred.resolve(FRUITS))
+      expect(clearButton()).not.toBeNull()
+    })
+
+    it('clears the input, closes the popup and returns focus to the input on click', async () => {
+      renderAutocomplete()
+
+      await typeAndSettle()
+      expect(popup()).not.toBeNull()
+      expect(input().value).toBe('abc')
+
+      fireEvent.click(clearButton()!)
+
+      expect(input().value).toBe('')
+      expect(popup()).toBeNull()
+      expect(document.activeElement).toBe(input())
+      // Emptied query → button gone again.
+      expect(clearButton()).toBeNull()
+    })
+
+    it('after clearing, typing a fresh query re-shows the below-threshold hint', async () => {
+      renderAutocomplete()
+
+      // Dismiss the hint for a below-threshold query, then clear.
+      typeQuery('ab')
+      pressKey('Escape')
+      expect(popup()).toBeNull()
+      fireEvent.change(input(), { target: { value: 'abc' } })
+      await act(() => vi.advanceTimersByTimeAsync(DEBOUNCE_MS))
+
+      fireEvent.click(clearButton()!)
+      expect(input().value).toBe('')
+
+      // A fresh below-threshold query gets the hint again (dismissal reset).
+      typeQuery('xy')
+      expect(popup()!.textContent).toContain('Type 1 more character to search')
+    })
+
+    it('defaults the accessible name to "Clear" and honors the clearLabel prop', () => {
+      const { view } = renderAutocomplete()
+      typeQuery('a')
+      expect(clearButton('Clear')).not.toBeNull()
+      view.unmount()
+
+      renderAutocomplete({ clearLabel: 'Wyczyść' })
+      typeQuery('a')
+      expect(clearButton('Wyczyść')).not.toBeNull()
+      expect(clearButton('Clear')).toBeNull()
+    })
+
+    it('is a real type="button" in tab order after the input', () => {
+      renderAutocomplete()
+      typeQuery('a')
+
+      const btn = clearButton()!
+      expect(btn.tagName).toBe('BUTTON')
+      expect(btn).toHaveAttribute('type', 'button')
+      // Natural document order: the input precedes the button (no tabindex hacks).
+      expect(input().compareDocumentPosition(btn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(btn).not.toHaveAttribute('tabindex')
+    })
+
+    it('lives inside the component root, so pressing it never triggers the outside-close path first', async () => {
+      const { view } = renderAutocomplete()
+
+      await typeAndSettle()
+      const btn = clearButton()!
+      // Structural guarantee the outside-press listener relies on (AC 3).
+      expect(view.container.contains(btn)).toBe(true)
+
+      // A full pointer press+click still clears rather than being swallowed.
+      fireEvent.pointerDown(btn)
+      fireEvent.click(btn)
+      expect(input().value).toBe('')
+      expect(popup()).toBeNull()
     })
   })
 

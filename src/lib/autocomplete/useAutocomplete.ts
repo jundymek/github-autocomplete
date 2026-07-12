@@ -92,6 +92,29 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>): UseAutoc
     controllerRef.current = null
   }, [])
 
+  /**
+   * The single reset path: cancel the debounce, abort any in-flight fetch, and
+   * drop back to idle/closed with the given query (`''` for a full clear). Both
+   * the below-threshold branch of `onInputChange` and `clear()` route through
+   * it, so there is exactly one place that defines "reset to initial".
+   */
+  const resetToInitial = useCallback(
+    (value: string) => {
+      clearDebounceTimer()
+      abortInFlight()
+      setState((prev) => ({
+        ...prev,
+        query: value,
+        status: 'idle',
+        items: [],
+        highlightedIndex: null,
+        isOpen: false,
+        error: undefined,
+      }))
+    },
+    [clearDebounceTimer, abortInFlight],
+  )
+
   useEffect(() => {
     isMountedRef.current = true
     return () => {
@@ -151,16 +174,7 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>): UseAutoc
       clearDebounceTimer()
 
       if (value.length < minChars) {
-        abortInFlight()
-        setState((prev) => ({
-          ...prev,
-          query: value,
-          status: 'idle',
-          items: [],
-          highlightedIndex: null,
-          isOpen: false,
-          error: undefined,
-        }))
+        resetToInitial(value)
         return
       }
 
@@ -174,8 +188,18 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>): UseAutoc
         startFetch(value)
       }, debounceMs)
     },
-    [clearDebounceTimer, abortInFlight, minChars, debounceMs, startFetch],
+    [clearDebounceTimer, abortInFlight, resetToInitial, minChars, debounceMs, startFetch],
   )
+
+  const clear = useCallback(() => {
+    // One-action reset to the initial state (AC 1). Routes through the shared
+    // `resetToInitial` path — the same reset the below-threshold branch uses —
+    // so there is one reset definition and zero duplication. Calling it directly
+    // (rather than via `onInputChange('')`) makes the reset unconditional: it
+    // holds even when a host sets minChars to 0, where an empty query would
+    // otherwise be "at threshold" and trigger a fetch instead of clearing.
+    resetToInitial('')
+  }, [resetToInitial])
 
   const close = useCallback(() => {
     // Closing cancels pending work: a debounced fetch queued before close
@@ -325,6 +349,7 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>): UseAutoc
     state: { ...state, statusMessage },
     handlers: {
       onInputChange,
+      clear,
       close,
       onKeyDown,
       onItemClick,

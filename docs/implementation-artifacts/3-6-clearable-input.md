@@ -4,7 +4,7 @@ baseline_commit: 40aa1cf62ad75f96bc16942356b896ad998af169
 
 # Story 3.6: Clearable input — a "×" button that resets the combobox
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -92,27 +92,28 @@ src/lib/autocomplete/useAutocomplete.ts (Escape keeps query); CLAUDE.md#Architec
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Hook: `clear()` (AC: 1) — test-first
-  - [ ] Add the hook tests from AC 6 (red).
-  - [ ] Add `clear` to `AutocompleteHandlers<T>` (types.ts, with doc comment) and implement it in
-        `useAutocomplete.ts` via the existing reset path (green).
-- [ ] Task 2 — Component: button + styling (AC: 2, 3) — test-first
-  - [ ] Add the RTL tests from AC 6 (red).
-  - [ ] Render the conditional button in `Autocomplete.tsx` (clear + refocus +
+- [x] Task 1 — Hook: `clear()` (AC: 1) — test-first
+  - [x] Add the hook tests from AC 6 (red).
+  - [x] Add `clear` to `AutocompleteHandlers<T>` (types.ts, with doc comment) and implement it in
+        `useAutocomplete.ts` via the existing reset path (green). *(Refactored the reset into a
+        shared `resetToInitial` helper so `clear()` is unconditional — review-gate fix.)*
+- [x] Task 2 — Component: button + styling (AC: 2, 3) — test-first
+  - [x] Add the RTL tests from AC 6 (red).
+  - [x] Render the conditional button in `Autocomplete.tsx` (clear + refocus +
         `setHintDismissedFor(null)`); add `clearLabel` prop with default.
-  - [ ] Style in `Autocomplete.module.css`: absolute in the trailing lane, muted glyph
+  - [x] Style in `Autocomplete.module.css`: absolute in the trailing lane, muted glyph
         (`--ac-color-text-muted`), accent on hover/focus-visible, focus ring consistent with the
         input; no layout shift when it appears/disappears (green).
-- [ ] Task 3 — API docs (AC: 5)
-  - [ ] Doc comments in `types.ts`; verify the barrel needs no change.
-  - [ ] Root `README.md`: `clearLabel` row in the props table; `clear` in the hook handlers list.
-- [ ] Task 4 — Verify (AC: 4, 6, 7)
-  - [ ] Full suite: `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e`.
-  - [ ] `pnpm dev` spot-check on BOTH instances (the country panel proves the button inherits the
-        teal theme purely via tokens — if it doesn't, the styling pierced the token seam).
-- [ ] Task 5 — Docs (deliverables below)
-  - [ ] `docs/features/epic-3-demo-e2e-launch/3-6-clearable-input/README.md`.
-  - [ ] `docs/features/epic-3-demo-e2e-launch/3-6-clearable-input/MANUAL_TESTING.md`
+- [x] Task 3 — API docs (AC: 5)
+  - [x] Doc comments in `types.ts`; verified the barrel needs no change.
+  - [x] Root `README.md`: `clearLabel` row in the props table; `clear` in the hook handlers list.
+- [x] Task 4 — Verify (AC: 4, 6, 7)
+  - [x] Full suite: `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e`.
+  - [x] `pnpm dev` spot-check on BOTH instances (the country panel proves the button inherits the
+        teal theme purely via tokens — confirmed: hover glyph resolves to `#0F766E`).
+- [x] Task 5 — Docs (deliverables below)
+  - [x] `docs/features/epic-3-demo-e2e-launch/3-6-clearable-input/README.md`.
+  - [x] `docs/features/epic-3-demo-e2e-launch/3-6-clearable-input/MANUAL_TESTING.md`
         (keyboard path: Tab to ×, Enter; pointer path; focus return; both instances).
 
 ## Non-goals (deliberate)
@@ -211,16 +212,86 @@ second-pass review + verified triage), re-run the full verification after any fi
 
 ### Agent Model Used
 
+claude-opus-4-8[1m] (Claude Code, dev-story pipeline).
+
 ### Implementation Plan
+
+1. Hook `clear()` (test-first): red tests for clear from success/loading(+late-resolve no-commit)/
+   error/below-threshold and pending-debounce cancellation; implement by delegating to the existing
+   `onInputChange('')` reset branch (one path, zero duplication); expose on `handlers`; document on
+   `AutocompleteHandlers<T>`.
+2. Component button (test-first): red RTL tests for visibility rules, click→clear/close/refocus,
+   `clearLabel` default+override, tab order, inside-root guarantee, hint re-show; render the
+   conditional `<button>` with inline-SVG glyph in the trailing lane; `clearInput` handler
+   (clear + `setHintDismissedFor(null)` + refocus, mirroring `retry`); style `.clear` in the lane.
+3. API docs: type doc comments; verified the barrel needs no change (both ride on already-exported
+   types); README `clearLabel` row + `clear` handler mention.
+4. Verify: full local suite + `pnpm dev` browser spot-check on both instances.
+5. Feature docs + pre-PR review gate.
 
 ### Debug Log References
 
+- Full suite green: 15 files / 218 unit-integration tests; 14/14 Playwright e2e (incl. 3 axe scans,
+  the open-with-results scan runs with the clear button present and stays clean → no e2e change).
+- `pnpm dev` browser drive (mocked GitHub, offline): GitHub "×" default accent `#6639BA`, hidden
+  while loading (dots present), click clears + closes popup + returns focus. Country "×" inherited
+  with zero adapter code; glyph muted `rgb(89,99,110)` by default, **hover teal `rgb(15,118,110)` =
+  `#0F766E`** from the panel's `--ac-color-accent` token override → reuse + token-theming proof.
+
 ### Completion Notes List
 
+- `clear()` routes through a shared `resetToInitial(value)` helper (also used by `onInputChange`'s
+  below-threshold branch) — clears debounce, aborts in-flight, resets all fields, `isOpen:false`;
+  the existing controller guard keeps a late/aborted fetch from committing. One reset path, zero
+  duplication, and the reset is unconditional (holds at `minChars:0` — see the review-gate fix).
+  Verified by the loading-clear test (resolve after clear commits nothing).
+- Button is in the component root (not the portal), so the outside-press `pointerdown` listener
+  treats a press on it as inside `rootRef` — asserted structurally in a test (no extra code).
+- Visibility `query.length > 0 && status !== 'loading'` makes button and loading dots mutually
+  exclusive in the one 40 px trailing lane → no layout shift, no overlap.
+- Inline-SVG glyph, no icon package (AR-1); no new `--ac-*` tokens (existing muted/accent suffice).
+- Escape semantics unchanged (verified by the untouched Escape tests).
+- No `src/features/`, `src/demo/`, or `e2e/` file edited — the reuse-proof holds; the barrel is
+  unchanged (both additions ride on already-exported `AutocompleteProps`/`AutocompleteHandlers`).
+
+### Pre-PR Review Gate
+
+- **Security review** (`/security-review` over the branch diff): no findings. The change is
+  client-side React; the only user value is the controlled query, used as an input value and passed
+  to the unchanged injected `fetchSuggestions`. Inline SVG is static; `clearLabel` flows only into
+  `aria-label` (React-escaped attribute). No injection/secrets/auth/network/deserialization surface
+  introduced. Architecture boundary re-verified: `lib/` imports nothing from `features/`/app.
+- **Independent second pass** (codex:codex-rescue over the diff with the spec as context):
+  clean on requirements 1/3/4/5 and the core of 2; raised **one Medium** finding — with a
+  host-supplied `minChars={0}`, an empty query is "at threshold", so the original
+  `clear()`→`onInputChange('')` delegation took the fetch branch instead of the reset branch.
+  **Triaged empirically** (throwaway hook test): CONFIRMED — after `clear()` at `minChars:0` the
+  state was `success`/`isOpen:true` and a second fetch for `''` fired, violating AC 1's
+  "returns to the initial state." **Fixed** by extracting a single `resetToInitial(value)` helper
+  that both the below-threshold branch and `clear()` route through; `clear()` now calls it directly,
+  making the reset unconditional (one reset path, zero duplication preserved). Added a
+  `minChars={0}` regression test (`useAutocomplete.test.tsx`). No other findings. Full suite
+  re-run green after the fix (219 unit-integration, 14 e2e).
+
 ### File List
+
+- `src/lib/autocomplete/useAutocomplete.ts` — UPDATE — `clear()` (delegates to `onInputChange('')`),
+  exposed on `handlers`.
+- `src/lib/autocomplete/types.ts` — UPDATE — doc `clear` on `AutocompleteHandlers<T>`, `clearLabel`
+  on `AutocompleteProps<T>`.
+- `src/lib/autocomplete/Autocomplete.tsx` — UPDATE — conditional clear button (inline-SVG glyph),
+  `clearLabel` prop + default, `clearInput` handler.
+- `src/lib/autocomplete/Autocomplete.module.css` — UPDATE — `.clear` styling in the trailing lane.
+- `src/lib/autocomplete/useAutocomplete.test.tsx` — UPDATE — `clear()` cases.
+- `src/lib/autocomplete/Autocomplete.test.tsx` — UPDATE — clear button behavior.
+- `README.md` — UPDATE — `clearLabel` prop row + `clear` handler mention.
+- `docs/features/epic-3-demo-e2e-launch/3-6-clearable-input/README.md` — NEW.
+- `docs/features/epic-3-demo-e2e-launch/3-6-clearable-input/MANUAL_TESTING.md` — NEW.
+- `docs/implementation-artifacts/3-6-clearable-input.md` — UPDATE — Dev Agent Record.
 
 ## Change Log
 
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
 | 2026-07-12 | 0.1 | Follow-up story drafted from the post-release UX pass: generic clear ("×") button in the lib layer — `handlers.clear()` on the hook, conditional button in the trailing input lane, `clearLabel` prop, full a11y treatment; Escape semantics unchanged. | Łukasz (via BMAD create-story) |
+| 2026-07-12 | 1.0 | Implemented (test-first): `handlers.clear()` via a shared `resetToInitial` reset path, conditional trailing-lane clear button with inline-SVG glyph, `clearLabel` prop, full a11y + token theming (verified on both demo instances). Pre-PR review gate run: security review clean; codex second pass found one Medium (`minChars=0` reset), triaged/confirmed/fixed with a regression test. Full suite green (219 unit-integration, 14 e2e). Status → review. | Dev agent (dev-story) |

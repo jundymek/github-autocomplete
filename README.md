@@ -79,6 +79,7 @@ import { Autocomplete } from '../lib/autocomplete'
 | `onSelect` | `(item: T) => void` | yes | Called on Enter or click (identical behavior). What selection *does* is the host's concern. |
 | `placeholder` | `string` | no | Input placeholder. Default `'Search…'`. |
 | `label` | `string` | no | Accessible name (`aria-label`) of the combobox input. Default `'Search'`. |
+| `clearLabel` | `string` | no | Accessible name (`aria-label`) of the trailing "×" clear button (shown when the input has a query and is not loading). Default `'Clear'`. |
 | `minChars` | `number` | no | Minimum query length before any request. Default `3`. |
 | `debounceMs` | `number` | no | Debounce window after the last keystroke. Default `300`. |
 | `messages` | `AutocompleteMessages` | no | Display-text overrides for the popup states (below-threshold hint, empty, error content incl. tone and retryability). |
@@ -103,10 +104,12 @@ const { state, handlers } = useAutocomplete<T>({
 - **`state`** — one object, the single source of truth: `query`,
   `status: 'idle' | 'loading' | 'success' | 'empty' | 'error'`, `items: T[]`,
   `highlightedIndex: number | null`, `isOpen`, `error?`, `statusMessage` (the `aria-live` text).
-- **`handlers`** — one object: `onInputChange`, `onKeyDown` (ArrowDown/ArrowUp clamped, Home/End,
-  Enter selects, Escape closes keeping query and focus), `onItemClick`, `onItemHover`, `close`,
-  plus ARIA prop getters (`getInputProps`, `getListboxProps`, `getItemProps`) that are spread
-  verbatim so the combobox wiring cannot be mis-assembled.
+- **`handlers`** — one object: `onInputChange`, `clear` (one-action reset to the initial
+  state — empties the query, cancels the debounce, aborts any in-flight fetch, closes the popup),
+  `onKeyDown` (ArrowDown/ArrowUp clamped, Home/End, Enter selects, Escape closes keeping query and
+  focus), `onItemClick`, `onItemHover`, `close`, plus ARIA prop getters (`getInputProps`,
+  `getListboxProps`, `getItemProps`) that are spread verbatim so the combobox wiring cannot be
+  mis-assembled.
 
 ### Theming — `--ac-*` design tokens
 

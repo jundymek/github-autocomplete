@@ -4,7 +4,7 @@ baseline_commit: d48220fc2696168a08310d6ae8c38e69f17cffb2
 
 # Story 3.4: Structure refactor — lib public API barrel + demo country grouping
 
-Status: review
+Status: Done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

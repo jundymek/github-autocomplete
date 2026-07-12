@@ -4,7 +4,7 @@ baseline_commit: 0d8100696c3af64642d7eeee3febf0034e08236c
 
 # Story 2.1: GitHub API client with typed errors and optional token
 
-Status: Review
+Status: Done
 
 ## Story
 

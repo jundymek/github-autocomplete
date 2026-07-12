@@ -4,7 +4,7 @@ baseline_commit: 687c223f4d0e76a5793fd861641612ab426d176d
 
 # Story 1.5: Reopen-on-focus for the `Autocomplete<T>` dropdown (retained results, no refetch)
 
-Status: review
+Status: Done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

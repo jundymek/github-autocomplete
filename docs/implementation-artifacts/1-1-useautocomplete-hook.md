@@ -4,7 +4,7 @@ baseline_commit: eaf6eef
 
 # Story 1.1: `useAutocomplete<T>` hook — state machine, debounce, threshold, cancellation
 
-Status: Review
+Status: Done
 
 ## Story
 

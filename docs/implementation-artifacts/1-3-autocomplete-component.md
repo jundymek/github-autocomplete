@@ -4,7 +4,7 @@ baseline_commit: 1b9e1228d30819b9a98c88359595cca4dfa6b167
 
 # Story 1.3: `Autocomplete<T>` presentational component with CSS Modules and portal dropdown
 
-Status: Review
+Status: Done
 
 ## Story
 

@@ -4,7 +4,7 @@ baseline_commit: b8ae32ce7be796cc9bcde2606b6624095034bdc4
 
 # Story 3.7: Close the popup on selection — one "accept" path that dismisses the dropdown
 
-Status: review
+Status: Done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

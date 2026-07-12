@@ -4,7 +4,7 @@ baseline_commit: b6fb085ee3c1dba9faade84363c747e26806028b
 
 # Story 2.2: Merge, sort, cap — the combined-results contract
 
-Status: Review
+Status: Done
 
 ## Story
 

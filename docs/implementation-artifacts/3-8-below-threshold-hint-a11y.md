@@ -4,7 +4,7 @@ baseline_commit: b8ae32ce7be796cc9bcde2606b6624095034bdc4
 
 # Story 3.8: Announce the below-threshold hint — accessibility for the "type N more characters" gate
 
-Status: review
+Status: Done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

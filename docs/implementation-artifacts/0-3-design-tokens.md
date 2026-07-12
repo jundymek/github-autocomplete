@@ -4,7 +4,7 @@ baseline_commit: 31b205e7b3b8503a3acc3836f70f3fff6b3aef40
 
 # Story 0.3: Design tokens as `--ac-*` custom properties
 
-Status: Review
+Status: Done
 
 ## Story
 

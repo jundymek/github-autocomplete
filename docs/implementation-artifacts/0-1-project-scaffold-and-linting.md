@@ -1,6 +1,6 @@
 # Story 0.1: Project scaffold, linting, and boundary rule
 
-Status: Ready for Review
+Status: Done
 
 ## Story
 

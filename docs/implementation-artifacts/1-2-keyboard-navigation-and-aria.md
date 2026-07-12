@@ -4,7 +4,7 @@ baseline_commit: e99b1824cea5a3ce26e67b058572430e9be0790a
 
 # Story 1.2: Keyboard navigation and ARIA combobox wiring in the hook
 
-Status: review
+Status: Done
 
 ## Story
 

@@ -4,7 +4,7 @@ baseline_commit: de9787d2a922469c5e5fdf43afd044ce287d7427
 
 # Story 1.6: Make GitHub user matches legible — "matches profile" hint + Organization kind
 
-Status: review
+Status: Done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

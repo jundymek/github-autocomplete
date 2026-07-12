@@ -4,7 +4,7 @@ baseline_commit: 9622584d46125de479a25b876c5ea751025292e9
 
 # Story 3.3: README and GitHub Pages deployment
 
-Status: review
+Status: Done
 
 ## Story
 

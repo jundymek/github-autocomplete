@@ -1,6 +1,6 @@
 # Story 3.2: Playwright e2e smoke and axe accessibility scan
 
-Status: Ready for Review
+Status: Done
 
 baseline_commit: c482540e6cbd56bdbd43ebd42beb620cafaa9d40
 

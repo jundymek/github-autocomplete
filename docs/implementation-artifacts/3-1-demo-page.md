@@ -3,7 +3,7 @@ baseline_commit: fe499186525b3bda0edff015612fde65c856cc44
 ---
 # Story 3.1: Demo page with the GitHub instance and a second, differently-themed data source
 
-Status: Review
+Status: Done
 
 ## Story
 

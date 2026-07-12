@@ -4,7 +4,7 @@ baseline_commit: 9ee75fd51b1459fecaea4c6570f33d474f000e17
 
 # Story 0.2: Test harnesses and CI pipeline
 
-Status: Review
+Status: Done
 
 ## Story
 

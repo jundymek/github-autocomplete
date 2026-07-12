@@ -3,7 +3,7 @@ baseline_commit: c3f74acb36cd86e599ddd8acd793ed49ea0aae90
 ---
 # Story 2.3: `GithubAutocomplete` — wired instance with new-tab selection and rate-limit state
 
-Status: review
+Status: Done
 
 ## Story
 

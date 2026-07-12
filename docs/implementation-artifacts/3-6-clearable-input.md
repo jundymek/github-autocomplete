@@ -4,7 +4,7 @@ baseline_commit: 40aa1cf62ad75f96bc16942356b896ad998af169
 
 # Story 3.6: Clearable input — a "×" button that resets the combobox
 
-Status: review
+Status: Done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

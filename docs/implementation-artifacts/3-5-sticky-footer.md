@@ -4,7 +4,7 @@ baseline_commit: 40aa1cf62ad75f96bc16942356b896ad998af169
 
 # Story 3.5: Demo polish — pin the footer to the bottom of tall viewports
 
-Status: review
+Status: Done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

@@ -235,9 +235,27 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>): UseAutoc
 
   const selectItem = useCallback(
     (item: T) => {
+      // Accept is "close + notify" (Story 3.7): the single selection path both
+      // Enter and click route through collapses the popup and clears the
+      // highlight, then hands the item to the consumer. Only isOpen/highlight
+      // change — query/items/status survive so reopen-on-focus (1.5) still has
+      // results.
+      //
+      // The close must be durable, so it cancels pending work exactly like
+      // close(): a user can accept a still-visible option while a debounce is
+      // queued (a new qualifying keystroke keeps the previous results open for
+      // ~debounceMs before its fetch fires). Without this teardown that queued
+      // fetch would resolve after accept and reopen the popup behind the
+      // selection. At a genuinely settled accept both calls are harmless no-ops.
+      //
+      // onSelect fires once, in the handler (never inside the setState updater —
+      // a reducer side effect would double-fire under StrictMode).
+      clearDebounceTimer()
+      abortInFlight()
+      setState((prev) => ({ ...prev, isOpen: false, highlightedIndex: null }))
       onSelect(item)
     },
-    [onSelect],
+    [clearDebounceTimer, abortInFlight, onSelect],
   )
 
   /** Moves the highlight to `index`; identical path for keyboard and hover. */

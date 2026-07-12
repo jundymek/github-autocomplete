@@ -362,6 +362,50 @@ describe('Autocomplete — generic presentational component', () => {
     })
   })
 
+  describe('accept collapses the popup (Story 3.7, AC 5, 7)', () => {
+    it('after Enter the listbox is gone and aria-expanded is false', async () => {
+      renderAutocomplete()
+
+      await typeAndSettle()
+      pressKey('ArrowDown')
+      pressKey('Enter')
+
+      expect(popup()).toBeNull()
+      expect(input()).toHaveAttribute('aria-expanded', 'false')
+      expect(input()).not.toHaveAttribute('aria-activedescendant')
+    })
+
+    it('after a click the listbox is gone and aria-expanded is false', async () => {
+      renderAutocomplete()
+
+      await typeAndSettle()
+      fireEvent.click(screen.getAllByRole('option')[1])
+
+      expect(popup()).toBeNull()
+      expect(input()).toHaveAttribute('aria-expanded', 'false')
+    })
+
+    it('reopen-on-focus (1.5) re-shows the same results after an accept, with no refetch', async () => {
+      const { fetchSuggestions } = renderAutocomplete()
+
+      await typeAndSettle()
+      pressKey('ArrowDown')
+      pressKey('Enter')
+      expect(popup()).toBeNull()
+      const callsAfterAccept = (fetchSuggestions as ReturnType<typeof vi.fn>).mock.calls.length
+
+      // Refocusing the settled, still-qualifying query reopens the existing
+      // results without a new fetch (openIfResults path, unchanged).
+      act(() => input().focus())
+      fireEvent.focus(input())
+
+      expect(popup()).not.toBeNull()
+      expect(screen.getAllByRole('option')).toHaveLength(FRUITS.length)
+      await act(() => vi.advanceTimersByTimeAsync(DEBOUNCE_MS))
+      expect((fetchSuggestions as ReturnType<typeof vi.fn>).mock.calls.length).toBe(callsAfterAccept)
+    })
+  })
+
   describe('ARIA wiring (AC 7)', () => {
     it('exposes the full combobox contract with an accessible name from the label prop', async () => {
       renderAutocomplete({ label: 'Search fruits' })

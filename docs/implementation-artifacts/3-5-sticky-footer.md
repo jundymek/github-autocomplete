@@ -4,7 +4,7 @@ baseline_commit: 40aa1cf62ad75f96bc16942356b896ad998af169
 
 # Story 3.5: Demo polish — pin the footer to the bottom of tall viewports
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -62,21 +62,22 @@ docs/planning-artifacts/architecture.md#AR-5]
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Sticky-footer CSS (AC: 1, 2)
-  - [ ] Add the `#root` flex-column block (with the `100vh` → `100dvh` fallback pair) to
+- [x] Task 1 — Sticky-footer CSS (AC: 1, 2)
+  - [x] Add the `#root` flex-column block (with the `100vh` → `100dvh` fallback pair) to
         `src/demo/demo.css`, placed near the `body` rule with a short comment stating the
         constraint (demo chrome only; `min-height` so short viewports still scroll).
-  - [ ] Add `margin-top: auto;` to the existing `footer` rule.
-- [ ] Task 2 — Design ground truth (AC: 6)
-  - [ ] Port the same pattern into `docs/design/demo-page.html`.
-- [ ] Task 3 — Verify (AC: 2, 3, 4, 5)
-  - [ ] `pnpm dev` spot-check: tall viewport (footer pinned, gap above the border), narrow/short
+  - [x] Add `margin-top: auto;` to the existing `footer` rule.
+- [x] Task 2 — Design ground truth (AC: 6)
+  - [x] Port the same pattern into `docs/design/demo-page.html`.
+- [x] Task 3 — Verify (AC: 2, 3, 4, 5)
+  - [x] `pnpm dev` spot-check: tall viewport (footer pinned, gap above the border), narrow/short
         viewport (scrolls as before), dropdown open with 50 results (unchanged), `/?clip=1`
-        (clipping host renders as before).
-  - [ ] `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e` all green.
-- [ ] Task 4 — Docs (deliverables below)
-  - [ ] `docs/features/epic-3-demo-e2e-launch/3-5-sticky-footer/README.md`.
-  - [ ] `docs/features/epic-3-demo-e2e-launch/3-5-sticky-footer/MANUAL_TESTING.md` (this is
+        (clipping host renders as before). Self-verified via built preview + Chromium geometry
+        measurement — all four scenarios PASS (see MANUAL_TESTING.md Result section).
+  - [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e` all green (205 unit, 14 e2e).
+- [x] Task 4 — Docs (deliverables below)
+  - [x] `docs/features/epic-3-demo-e2e-launch/3-5-sticky-footer/README.md`.
+  - [x] `docs/features/epic-3-demo-e2e-launch/3-5-sticky-footer/MANUAL_TESTING.md` (this is
         visible browser behavior; steps mirror the Task 3 spot-check).
 
 ## Non-goals (deliberate)
@@ -159,16 +160,84 @@ second-pass review + verified triage), re-run the full verification after any fi
 
 ### Agent Model Used
 
+Claude Opus 4.8 (claude-opus-4-8[1m]) via BMAD dev-story workflow.
+
 ### Implementation Plan
+
+1. Add the `#root` flex-column block (`display: flex; flex-direction: column; min-height: 100vh;`
+   then `min-height: 100dvh;`) near the `body` rule in `src/demo/demo.css`, plus `margin-top: auto`
+   on the existing `footer` rule (AC 1, 2).
+2. Port the same pattern into `docs/design/demo-page.html` — there `body` is the flex column since
+   that file has no `#root` and wraps `.wrap` + `footer` directly (AC 6).
+3. Write README.md and MANUAL_TESTING.md.
+4. Full verification + self-executed manual test (geometry measured on a built preview).
+5. Review gate (security review + codex-rescue second pass + triage), then PR.
 
 ### Debug Log References
 
+None — no defects encountered. CSS-only change; no test modifications.
+
 ### Completion Notes List
 
+- Implemented exactly the two rules in AC 1: `#root` flex column with the `100vh → 100dvh` fallback
+  pair, and `footer { margin-top: auto }`. No other layout rule touched (`.wrap`, `.stage`, header,
+  panel rules unchanged). Verified no file under `src/lib/` changed (AC 4) — diff is only
+  `src/demo/demo.css` and `docs/design/demo-page.html` (+ docs).
+- Design ground truth kept in sync (AC 6): `body` is the flex column there, matching that file's
+  structure; the app uses `#root` matching React's mount point.
+- **Self-verified manual testing** against a real `pnpm build && pnpm preview` app, driving Chromium
+  and measuring geometry: tall 1200×1400 → footer bottom = 1400 = viewport height, not scrollable
+  (pinned, ~539 px absorbed above the border); short 1200×600 → scrollable, footer follows content
+  (margin-top collapses to 0); narrow 700×600 → single-column, scrollable, unaffected; `/?clip=1` →
+  no footer, single `.wrap` child in `#root`, route intact. All PASS. Dropdown-50-results case is
+  covered by the passing e2e clipping spec.
+- **Review gate — security review:** ran the /security-review skill. The actual working-tree diff is
+  two CSS declarations plus two markdown docs — no code execution, user input, dynamic HTML,
+  data flow, or dependency changes. **Zero security findings** (no attack surface introduced). (Note:
+  the skill's auto-captured `git diff` initially showed the previously-committed 3.5/3.6 spec docs
+  rather than this branch's working-tree CSS; the assessment above is against the real story diff.)
+- **Review gate — independent second pass (codex-rescue):** see triage below.
+- Verification: `pnpm lint && pnpm typecheck && pnpm test` (205 unit) and `pnpm test:e2e` (14 e2e
+  incl. axe + clipping) all green.
+
+### Review Triage (codex-rescue second pass)
+
+Independent second-pass review via the codex-rescue agent (Codex, read-only) over the story diff
+with the spec as context. **Verdict: CLEAN — no blocking, no non-blocking findings.** It verified
+empirically against the actual working-tree diff:
+
+- AC1: `#root` is `display:flex; flex-direction:column; min-height:100vh; min-height:100dvh;` in the
+  required order and `footer { margin-top:auto }`; no other selector/declaration changed.
+- AC2: uses `min-height`, never `height`, so the column grows and short/tall/narrow viewports still
+  scroll.
+- AC3: `src/App.tsx` `/?clip=1` still returns only `.wrap > <ClippingHost />`, no footer.
+- AC4: `git diff --name-only` lists only `docs/design/demo-page.html` and `src/demo/demo.css` —
+  nothing under `src/lib/`; `Autocomplete.tsx` still positions the popup from
+  `getBoundingClientRect()` (`position: fixed`), unaffected by the flex-column root.
+- AC6: `body` is the flex column in the design HTML (no `#root` there) with the same
+  `footer { margin-top:auto }`.
+- No clipping, breakpoint, portal-positioning, reset-margin, or `.wrap { margin: 0 auto }`
+  regression found.
+
+**Triage:** No findings to fix — nothing to verify or refute. The one item the reviewer flagged as
+"unverified" was the runtime test-suite green state (it ran read-only and did not execute the
+suite); that is independently confirmed here — `pnpm lint && pnpm typecheck && pnpm test` (205
+passed) and `pnpm test:e2e` (14 passed, incl. axe + clipping) all green. No re-run needed since no
+code changed after verification.
+
 ### File List
+
+- `src/demo/demo.css` — UPDATE — `#root` flex column (`100vh`→`100dvh` fallback) + `footer
+  { margin-top: auto }`.
+- `docs/design/demo-page.html` — UPDATE — same sticky-footer pattern (`body` as the flex column).
+- `docs/features/epic-3-demo-e2e-launch/3-5-sticky-footer/README.md` — NEW — story documentation.
+- `docs/features/epic-3-demo-e2e-launch/3-5-sticky-footer/MANUAL_TESTING.md` — NEW — visual
+  verification steps + self-verified result.
+- `docs/implementation-artifacts/3-5-sticky-footer.md` — UPDATE — Dev Agent Record, tasks, status.
 
 ## Change Log
 
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
 | 2026-07-12 | 0.1 | Follow-up story drafted from the post-release visual pass: sticky-footer column on the demo page (`#root` flex column + `footer { margin-top: auto }`), demo chrome only, design ground truth kept in sync. | Łukasz (via BMAD create-story) |
+| 2026-07-12 | 1.0 | Implemented: `#root` flex column + `footer { margin-top: auto }` in `src/demo/demo.css`; same pattern (`body` column) in `docs/design/demo-page.html`; docs added. Full suite green (205 unit, 14 e2e). Review gate passed — security review zero findings, codex-rescue second pass CLEAN. Status → review. | Dev agent (BMAD dev-story) |

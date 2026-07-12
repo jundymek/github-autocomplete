@@ -17,7 +17,14 @@
     --canvas: #f2f4f8; --ink: #1f2328;
   }
   * { box-sizing: border-box; margin: 0; }
-  body { font-family: var(--ac-font-ui); background: var(--canvas); color: var(--ink); }
+  /* Sticky-footer column — here `body` directly wraps `.wrap` + `footer`, so
+     `body` is the flex column (the app uses `#root`, matching React's mount).
+     `min-height` (never `height`) so short viewports still scroll; `100vh`
+     fallback then `100dvh` last so it wins where supported. */
+  body {
+    font-family: var(--ac-font-ui); background: var(--canvas); color: var(--ink);
+    display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh;
+  }
   .wrap { max-width: 1080px; margin: 0 auto; padding: 0 28px; }
 
   /* ————— Header: the thesis ————— */
@@ -99,7 +106,7 @@
     display: flex; justify-content: space-between;
   }
 
-  footer { border-top: 1px solid var(--ac-color-border); padding: 22px 0 44px; }
+  footer { border-top: 1px solid var(--ac-color-border); padding: 22px 0 44px; margin-top: auto; }
   footer .wrap { display: flex; flex-wrap: wrap; gap: 8px 28px; font: 400 12.5px/1.6 var(--ac-font-mono); color: var(--ac-color-text-muted); }
   footer a { color: var(--ac-color-accent); text-decoration: none; }
   footer a:hover, footer a:focus-visible { text-decoration: underline; }

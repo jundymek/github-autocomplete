@@ -44,6 +44,21 @@ body {
   color: var(--ink);
 }
 
+/* Sticky-footer column — demo chrome only. React mounts the page (`.wrap` +
+   footer) into `#root`, so `#root` is the flex container that lets
+   `footer { margin-top: auto }` pin the footer to the bottom of tall viewports.
+   `min-height` (never `height`) so short viewports still scroll: the column
+   grows past the viewport when content is taller. `100vh` first as the
+   fallback, `100dvh` last so it wins where dynamic viewport units are
+   supported (avoids the mobile URL-bar overshoot of plain `vh`). No host
+   layout is imposed on the reusable component (AR-5). */
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
 .wrap {
   max-width: 1080px;
   margin: 0 auto;
@@ -241,6 +256,9 @@ header p.lede code {
 footer {
   border-top: 1px solid var(--ac-color-border);
   padding: 22px 0 44px;
+  /* Absorb the spare vertical space of the `#root` column above the footer's
+     top border, pinning the footer to the bottom on tall viewports. */
+  margin-top: auto;
 }
 
 footer .wrap {

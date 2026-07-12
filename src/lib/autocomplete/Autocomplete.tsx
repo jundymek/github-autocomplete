@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 
@@ -55,6 +55,15 @@ function defaultBelowThresholdHint(remaining: number): ReactNode {
       to search
     </>
   )
+}
+
+/**
+ * Plain-text sibling of {@link defaultBelowThresholdHint} for the live region.
+ * A screen reader can't read the rich `ReactNode` above, so the announcement is
+ * built from a flat string — never by reading text back out of rendered nodes.
+ */
+function defaultBelowThresholdAnnouncement(remaining: number): string {
+  return `Type ${remaining} more character${remaining === 1 ? '' : 's'} to search`
 }
 
 function defaultEmptyTitle(query: string): ReactNode {
@@ -210,6 +219,24 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
     hintDismissedFor !== state.query
   const popupOpen = state.isOpen || belowThreshold
 
+  // Component-local id for the below-threshold hint node. It is *not* part of
+  // the hook's generic ARIA (getInputProps knows nothing about below-threshold),
+  // so both the id on the hint and the input's aria-describedby link are added
+  // at this layer (AC 3). Only referenced while the hint is shown, so it never
+  // dangles.
+  const hintId = `${useId()}-below-threshold-hint`
+
+  // The live region announces the below-threshold hint as a flat string while
+  // gated (AC 1, 2); otherwise it keeps deriving from the hook's statusMessage
+  // (loading/empty/error/results). The two sources never fight — exactly one is
+  // active per render.
+  const belowThresholdAnnouncement = belowThreshold
+    ? (messages?.belowThresholdAnnouncement ?? defaultBelowThresholdAnnouncement)(
+        minChars - state.query.length,
+      )
+    : null
+  const liveRegionText = belowThresholdAnnouncement ?? state.statusMessage
+
   const popupStyle = usePopupStyle(popupOpen, inputRef)
 
   // Keep the highlighted option in view inside the max-height-bounded list.
@@ -297,7 +324,10 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
       const hint = messages?.belowThreshold ?? defaultBelowThresholdHint
       return (
         <div className={styles.state}>
-          <div className={styles.stateDesc}>{hint(minChars - state.query.length)}</div>
+          {/* id links the input via aria-describedby while below threshold (AC 3). */}
+          <div id={hintId} className={styles.stateDesc}>
+            {hint(minChars - state.query.length)}
+          </div>
         </div>
       )
     }
@@ -358,6 +388,11 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
         className={styles.input}
         placeholder={placeholder}
         aria-label={label}
+        // Link the input to the visible hint only while it is shown (AC 3).
+        // Added after the {...inputProps} spread so it never clobbers a
+        // hook-provided attribute (the hook does not emit aria-describedby).
+        // Absent otherwise → no dangling reference.
+        aria-describedby={belowThreshold ? hintId : undefined}
         onKeyDown={onKeyDown}
         onFocus={(event) => {
           // Compose the hook's reopen-on-focus (results) with the component's
@@ -399,7 +434,7 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
       {/* Rendered in-flow (not in the portal) so it stays inside the host's
           accessibility tree regardless of where the popup lands. */}
       <div className={styles.srOnly} role="status" aria-live="polite">
-        {state.statusMessage}
+        {liveRegionText}
       </div>
       {popupOpen &&
         createPortal(

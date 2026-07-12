@@ -244,6 +244,73 @@ describe('Autocomplete — generic presentational component', () => {
     })
   })
 
+  describe('below-threshold announcement + aria-describedby (3.8, AC 7)', () => {
+    it('announces the plain-text hint in the live region while below threshold, tracking the count', async () => {
+      renderAutocomplete()
+
+      // 1 char below the default minChars of 3 → 2 remaining.
+      typeQuery('a')
+      expect(screen.getByRole('status')).toHaveTextContent('Type 2 more characters to search')
+
+      // 2 chars → 1 remaining; the polite region tracks the wholesale change.
+      fireEvent.change(input(), { target: { value: 'ab' } })
+      expect(screen.getByRole('status')).toHaveTextContent('Type 1 more character to search')
+    })
+
+    it('associates the input with the visible hint via aria-describedby only while below threshold', async () => {
+      renderAutocomplete()
+
+      typeQuery('ab')
+      const describedby = input().getAttribute('aria-describedby')
+      expect(describedby).not.toBeNull()
+      // The referenced node exists and carries the hint text.
+      const hint = document.getElementById(describedby!)
+      expect(hint).not.toBeNull()
+      expect(hint!.textContent).toContain('more character')
+
+      // Crossing the threshold and settling: no dangling reference.
+      await typeAndSettle('abc')
+      expect(input()).not.toHaveAttribute('aria-describedby')
+    })
+
+    it('drops the announcement and aria-describedby when the hint is Escape-dismissed', async () => {
+      renderAutocomplete()
+
+      typeQuery('ab')
+      expect(screen.getByRole('status')).toHaveTextContent('Type 1 more character to search')
+      expect(input()).toHaveAttribute('aria-describedby')
+
+      pressKey('Escape')
+      expect(popup()).toBeNull()
+      expect(screen.getByRole('status')).toHaveTextContent('')
+      expect(input()).not.toHaveAttribute('aria-describedby')
+    })
+
+    it('reflects a messages override in both the visual hint and the announcement', async () => {
+      renderAutocomplete({
+        minChars: 5,
+        messages: {
+          belowThreshold: (remaining) => <b>Need {remaining} more</b>,
+          belowThresholdAnnouncement: (remaining) => `Need ${remaining} more, please`,
+        },
+      })
+
+      typeQuery('ab')
+      // Visual hint (rich node) is unchanged in shape.
+      expect(popup()!.textContent).toContain('Need 3 more')
+      // Announcement uses the plain-text override.
+      expect(screen.getByRole('status')).toHaveTextContent('Need 3 more, please')
+    })
+
+    it('regression: at/above threshold the live region announces the normal state, with no aria-describedby', async () => {
+      renderAutocomplete()
+
+      await typeAndSettle('abc')
+      expect(screen.getByRole('status')).toHaveTextContent('3 results')
+      expect(input()).not.toHaveAttribute('aria-describedby')
+    })
+  })
+
   describe('portal (AC 5)', () => {
     it('renders the open dropdown as a direct child of document.body', async () => {
       const { view } = renderAutocomplete()

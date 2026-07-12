@@ -82,7 +82,7 @@ import { Autocomplete } from '../lib/autocomplete'
 | `clearLabel` | `string` | no | Accessible name (`aria-label`) of the trailing "×" clear button (shown when the input has a query and is not loading). Default `'Clear'`. |
 | `minChars` | `number` | no | Minimum query length before any request. Default `3`. |
 | `debounceMs` | `number` | no | Debounce window after the last keystroke. Default `300`. |
-| `messages` | `AutocompleteMessages` | no | Display-text overrides for the popup states (below-threshold hint, empty, error content incl. tone and retryability). |
+| `messages` | `AutocompleteMessages` | no | Display-text overrides for the popup states (below-threshold hint + its plain-text `belowThresholdAnnouncement` sibling for the live region, empty, error content incl. tone and retryability). |
 | `statusMessages` | see hook options | no | Overrides for the visually-hidden `aria-live` announcements. |
 | `renderFooter` | `(ctx: AutocompleteFooterContext) => ReactNode` | no | Replaces the default dropdown footer (which narrates the contract: "min 3 characters", "N results · sorted A→Z"). Return `null` for no footer. |
 

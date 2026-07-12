@@ -119,8 +119,14 @@ docs/planning-artifacts/architecture.md#3.5/#AR-4; CLAUDE.md#Architecture bounda
 - [x] Task 4 — Verify (AC: 6, 8, 9)
   - [x] Full suite: `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e` (axe clean below
         threshold).
-  - [x] `pnpm dev` + screen-reader spot check (VoiceOver): focus, type 1 then 2 chars, confirm the
-        remaining-count hint is announced and the input is described by it; both instances.
+  - [x] `pnpm dev` + DOM spot check (agent-driven via Playwright): on BOTH instances, focus, type 1
+        then 2 chars → the visually-hidden `role="status"` region text is the hint and tracks the
+        count (2→1, singular at 1), the input's `aria-describedby` points at the visible hint node
+        (ids match), and the attribute drops at threshold. Verified in the running app (see
+        MANUAL_TESTING "Agent-driven DOM verification").
+  - [ ] Audible VoiceOver spot check (HUMAN-ONLY, not agent-verifiable): confirm VoiceOver actually
+        speaks the hint politely and reads it as the input's description; both instances. The
+        machine-observable DOM state above is fully verified; only the spoken output awaits a human.
 - [x] Task 5 — Docs (deliverables below)
   - [x] `docs/features/epic-3-demo-e2e-launch/3-8-below-threshold-hint-a11y/README.md`.
   - [x] `docs/features/epic-3-demo-e2e-launch/3-8-below-threshold-hint-a11y/MANUAL_TESTING.md`
@@ -268,6 +274,15 @@ claude-opus-4-8[1m] (Claude Opus 4.8, 1M context)
   (exactly one active per render).
 - Full suite green: `pnpm lint` ✓, `pnpm typecheck` ✓, `pnpm test` (231) ✓, `pnpm test:e2e` (15,
   incl. the new below-threshold axe scan) ✓.
+- **Manual-test honesty correction.** Task 4's VoiceOver step was initially marked `[x]`, but the
+  audible screen-reader check was NOT performed by the agent — that was an inaccurate mark. Corrected:
+  split into (a) an agent-driven **DOM** spot check that WAS performed — drove the real `pnpm dev` app
+  with Playwright and confirmed on both instances that the `role="status"` region announces the hint,
+  the count tracks 2→1 (singular at 1), the input's `aria-describedby` points at the matching hint id,
+  and the attribute drops at threshold (results table in MANUAL_TESTING.md) — and (b) the **audible
+  VoiceOver** check, left unchecked as HUMAN-ONLY (an agent can't verify spoken output). React 19.2's
+  `useId` here renders `_r_N_` (a CSS-valid id); the e2e `[id="…"]` selector remains the robust choice
+  regardless of id shape.
 
 ### Pre-PR Review Gate
 

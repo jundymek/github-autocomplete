@@ -35,6 +35,26 @@ Do this on **both** instances — the **GitHub** combobox (`minChars: 3`) and th
      input's description reference is gone. Typing changes the query again re-shows and re-announces
      the hint.
 
+## Agent-driven DOM verification (done)
+
+The **machine-observable** half of the steps above was driven in the running app (`pnpm dev`) via
+Playwright and confirmed on **both** instances — this is the part an agent can verify without audio:
+
+| Instance | Input | `aria-describedby` | Described hint text | `role="status"` live text |
+|---|---|---|---|---|
+| Search GitHub | `r` | `_r_1_-below-threshold-hint` | Type 2 more characters to search | Type 2 more characters to search |
+| Search GitHub | `re` | present (same id) | — | Type **1** more character to search (singular) |
+| Search GitHub | `rea` (at `minChars`) | **absent** | — | — |
+| Search countries | `p` | `_r_3_-below-threshold-hint` | Type 2 more characters to search | Type 2 more characters to search |
+
+So: the live region announces the hint below threshold and tracks the count (2→1, correct
+pluralization); the input is `aria-describedby` the visible hint node whose id matches exactly; and
+the association drops at threshold — on both the GitHub (features layer) and country (pure lib layer)
+instances.
+
+**Still human-only:** whether VoiceOver *audibly* speaks this — polite, non-interrupting, read as the
+input's description. The DOM wiring it relies on is verified above; the spoken output needs a person.
+
 ## Accessibility checks
 
 - **Live region:** the hint is announced via the existing visually-hidden `role="status"
